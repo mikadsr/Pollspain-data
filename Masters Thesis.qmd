@@ -11,7 +11,7 @@ library(readr)
 library(dplyr)
 library(stringr)
 # Directory containing the .dat files
-data_directory <- "C:/Users/mklde/OneDrive/Documents/R stuff/Pollspain-data/02-congress/02198210/02198210_MESA"
+data_directory <- "./02-congress/02198210/02198210_MESA/"
 
 # List of .dat files in the directory
 dat_files <- list.files(path = data_directory, pattern = "\\.DAT$", full.names = TRUE)
