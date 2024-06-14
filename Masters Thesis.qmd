@@ -1,0 +1,600 @@
+---
+title: "Masters Thesis"
+---
+
+# Converting from .DAT a .CSV
+
+Pending issue here: 04 files keep giving me issues because of the lenght of the names. Need guidance here. 
+```{r}
+# Load the necessary packages
+library(readr)
+library(dplyr)
+library(stringr)
+# Directory containing the .dat files
+data_directory <- "C:/Users/mklde/OneDrive/Documents/R stuff/Pollspain-data/02-congress/02198210/02198210_MESA"
+
+# List of .dat files in the directory
+dat_files <- list.files(path = data_directory, pattern = "\\.DAT$", full.names = TRUE)
+
+```
+
+
+```{r}
+# Define the function to clean and convert .dat files to .csv based on specific structures
+convert_dat_to_csv <- function(dat_file, col_names, col_classes, col_widths, encoding = "ISO-8859-1") {
+  if (!file.exists(dat_file)) {
+    warning(paste("File does not exist:", dat_file))
+    return(NULL)
+  }
+  
+  # Read the file line by line to clean up invalid inputs and ensure the file ends correctly
+  lines <- read_lines(dat_file, locale = locale(encoding = encoding))
+  
+  # Remove lines that are empty or contain only invalid characters
+  clean_lines <- lines[!grepl("^[[:blank:]]*$", lines)]
+  
+  # Convert lines to UTF-8 to handle non-ASCII characters, focusing on handling 'ñ'
+  clean_lines <- iconv(clean_lines, from = encoding, to = "UTF-8", sub = "byte")
+  
+  # Write the cleaned lines to a temporary file
+  temp_file <- tempfile()
+  write_lines(clean_lines, temp_file)
+  
+  # Read the fixed-width file with the specified encoding from the temporary file
+  data <- read_fwf(temp_file, fwf_widths(col_widths, col_names), locale = locale(encoding = "UTF-8"))
+  
+  # Apply tolerance for specific columns (if necessary)
+  if ("Nombre del candidato." %in% col_names) {
+    data$`Nombre del candidato.` <- str_sub(data$`Nombre del candidato.`, 1, 25)
+  }
+  if ("Primer apellido del candidato." %in% col_names) {
+    data$`Primer apellido del candidato.` <- str_sub(data$`Primer apellido del candidato.`, 1, 25)
+  }
+  if ("Segundo apellido del candidato." %in% col_names) {
+    data$`Segundo apellido del candidato.` <- str_sub(data$`Segundo apellido del candidato.`, 1, 25)
+  }
+  
+  # Cast columns to their respective types
+  for (i in seq_along(col_classes)) {
+    if (col_classes[i] == "integer") {
+      data[[col_names[i]]] <- as.integer(data[[col_names[i]]])
+    } else if (col_classes[i] == "character") {
+      data[[col_names[i]]] <- as.character(data[[col_names[i]]])
+    }
+  }
+  
+  # Create the .csv file path by replacing .DAT with .csv
+  csv_file <- sub("\\.DAT$", ".csv", dat_file, ignore.case = TRUE)
+  
+  # Write the data to a .csv file with the specified encoding
+  write_csv(data, csv_file, na = "", append = FALSE)
+  
+  # Remove the temporary file
+  unlink(temp_file)
+}
+```
+
+```{r}
+
+# Loop through each .dat file and apply the appropriate conversion
+for (dat_file in dat_files) {
+  if (grepl("^01", basename(dat_file))) {
+    # Specifications for "01" files
+  col_names <- c(
+    "type_elec",
+    "year",
+    "month",
+    "round",
+    "01xxaamm",
+    "02xxaamm",
+    "03xxaamm",
+    "04xxaamm",
+    "05xxaamm",
+    "06xxaamm",
+    "07xxaamm",
+    "08xxaamm",
+    "09xxaamm",
+    "10xxaamm",
+    "1104aamm",
+    "1204aamm",
+    "0510aamm",
+    "0610aamm",
+    "0710aamm",
+    "0810aamm"
+  )
+  col_classes <- rep("character", length(col_names))
+  col_widths <- c(2, 4, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+  # Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)} 
+  else if (grepl("^02", basename(dat_file))) {
+    # Specifications for "02" files
+col_names <- c(
+  "type_elec",
+  "year",
+  "month",
+  "round",
+  "Tipo de ámbito (N=nacional, A=autonómico)",
+  "Ámbito territorial del proceso electoral",
+  "Fecha de celebración del proceso electoral (DIA)",
+  "Fecha de celebración del proceso electoral (MES)",
+  "Fecha de celebración del proceso electoral (AÑO)",
+  "Hora de apertura de los ‘Colegios Electorales’ (en formato ‘HH:MM’ de 24 horas)",
+  "Hora de cierre de los ‘Colegios Electorales’ (en formato ‘HH:MM’ de 24 horas)",
+  "Hora del primer ‘Avance de Participación’ (en formato ‘HH:MM’ de 24 horas)",
+  "Hora del segundo ‘Avance de Participación’ (en formato ‘HH:MM’ de 24 horas)"
+)
+col_classes <- c(
+  "integer",  # type_elec
+  "integer",  # year
+  "integer",  # month
+  "integer",  # round
+  "character", # Tipo de ámbito (N=nacional, A=autonómico)
+  "integer",  # Ámbito territorial del proceso electoral
+  "integer",  # Fecha de celebración del proceso electoral (DIA)
+  "integer",  # Fecha de celebración del proceso electoral (MES)
+  "integer",  # Fecha de celebración del proceso electoral (AÑO)
+  "character", # Hora de apertura de los ‘Colegios Electorales’ (en formato ‘HH:MM’ de 24 horas)
+  "character", # Hora de cierre de los ‘Colegios Electorales’ (en formato ‘HH:MM’ de 24 horas)
+  "character", # Hora del primer ‘Avance de Participación’ (en formato ‘HH:MM’ de 24 horas)
+  "character"  # Hora del segundo ‘Avance de Participación’ (en formato ‘HH:MM’ de 24 horas)
+)
+col_widths <- c(2, 4, 2, 1, 1, 2, 2, 2, 4, 5, 5, 5, 5)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)
+    } 
+  else if (grepl("^03", basename(dat_file))) {
+    # Specifications for "03" files
+col_names <- c(
+  "type_elec",
+  "year",
+  "month",
+  "Código de la candidatura",
+  "Siglas de la candidatura",
+  "Denominación de la candidatura",
+  "Código de la candidatura cabecera de acumulación a nivel provincial",
+  "Código de la candidatura cabecera de acumulación a nivel autonómico",
+  "Código de la candidatura cabecera de acumulación a nivel nacional"
+)
+col_classes <- c(
+  "integer",  # type_elec
+  "integer",  # year
+  "integer",  # month
+  "integer",  # Código de la candidatura
+  "character", # Siglas de la candidatura
+  "character", # Denominación de la candidatura
+  "integer",  # Código de la candidatura cabecera de acumulación a nivel provincial
+  "integer",  # Código de la candidatura cabecera de acumulación a nivel autonómico
+  "integer"   # Código de la candidatura cabecera de acumulación a nivel nacional
+)
+col_widths <- c(2, 4, 2, 6, 50, 150, 6, 6, 6)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)
+  }
+   else if (grepl("^04", basename(dat_file))) {
+    # Specifications for "04" files with tolerance for name fields
+    col_names <- c(
+      "type_elec",
+      "year",
+      "month",
+      "round",
+      "prov_code",
+      "dist_code",
+      "muni_code",
+      "cand_code",
+      "cand_order",
+      "cand_type",
+      "Nombre del candidato.",
+      "Primer apellido del candidato.",
+      "Segundo apellido del candidato.",
+      "cand_sex",
+      "cand_birth_day",
+      "cand_birth_month",
+      "cand_birth_year",
+      "cand_dni",
+      "cand_elected"
+    )
+    col_classes <- c(
+      "integer",  # type_elec
+      "integer",  # year
+      "integer",  # month
+      "integer",  # round
+      "integer",  # prov_code
+      "integer",  # dist_code
+      "integer",  # muni_code
+      "integer",  # cand_code
+      "integer",  # cand_order
+      "character", # cand_type
+      "character", # Nombre del candidato.
+      "character", # Primer apellido del candidato.
+      "character", # Segundo apellido del candidato.
+      "character", # cand_sex
+      "integer",  # cand_birth_day
+      "integer",  # cand_birth_month
+      "integer",  # cand_birth_year
+      "character", # cand_dni
+      "character"  # cand_elected
+    )
+    col_widths <- c(2, 4, 2, 1, 2, 1, 3, 6, 3, 1, 30, 30, 30, 1, 2, 2, 4, 10, 1) # Increased widths for name fields
+    
+    # Convert the .dat file to .csv with specified encoding
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths, encoding = "ISO-8859-1")
+  }
+  else if (grepl("^05", basename(dat_file))){
+    # Specifications for "05" files
+col_names <- c(
+  "type_elec",
+  "year",
+  "month",
+  "round (en procesos a una sola vuelta = 1) o Número de pregunta en Referéndum",
+  "Código de la Comunidad Autónoma",
+  "Código I.N.E. de la provincia",
+  "Código I.N.E. del municipio",
+  "Número de distrito municipal en su caso o 99 si es el total municipal",
+  "Nombre del municipio o del distrito municipal",
+  "Código del Distrito Electoral cuando corresponda o 0 en elecciones que no tienen este tipo de circunscripción",
+  "Código del Partido Judicial",
+  "Código de la Diputación Provincial",
+  "Código de la comarca",
+  "Población de derecho",
+  "Número de mesas",
+  "Censo del I.N.E.",
+  "Censo de escrutinio",
+  "Censo C.E.R.E. en escrutinio (Residentes Extranjeros)",
+  "Total votantes C.E.R.E. (Residentes Extranjeros)",
+  "Votantes del primer avance de participación",
+  "Votantes del segundo avance de participación",
+  "Votos en blanco",
+  "Votos nulos",
+  "Votos a candidaturas",
+  "Número de ‘Escaños’ a distribuir cuando el municipio es la circunscripción electoral. Ceros en otros casos",
+  "Votos afirmativos en Referéndum o ceros en otros procesos electorales",
+  "Votos negativos en Referéndum o ceros en otros procesos electorales",
+  "Datos oficiales (Si/No)"
+)
+col_classes <- c(
+  "integer",  # type_elec
+  "integer",  # year
+  "integer",  # month
+  "integer",  # round (en procesos a una sola vuelta = 1) o Número de pregunta en Referéndum
+  "integer",  # Código de la Comunidad Autónoma
+  "integer",  # Código I.N.E. de la provincia
+  "integer",  # Código I.N.E. del municipio
+  "integer",  # Número de distrito municipal en su caso o 99 si es el total municipal
+  "character", # Nombre del municipio o del distrito municipal
+  "integer",  # Código del Distrito Electoral cuando corresponda o 0 en elecciones que no tienen este tipo de circunscripción
+  "integer",  # Código del Partido Judicial
+  "integer",  # Código de la Diputación Provincial
+  "integer",  # Código de la comarca
+  "integer",  # Población de derecho
+  "integer",  # Número de mesas
+  "integer",  # Censo del I.N.E.
+  "integer",  # Censo de escrutinio
+  "integer",  # Censo C.E.R.E. en escrutinio (Residentes Extranjeros)
+  "integer",  # Total votantes C.E.R.E. (Residentes Extranjeros)
+  "integer",  # Votantes del primer avance de participación
+  "integer",  # Votantes del segundo avance de participación
+  "integer",  # Votos en blanco
+  "integer",  # Votos nulos
+  "integer",  # Votos a candidaturas
+  "integer",  # Número de ‘Escaños’ a distribuir cuando el municipio es la circunscripción electoral. Ceros en otros casos
+  "integer",  # Votos afirmativos en Referéndum o ceros en otros procesos electorales
+  "integer",  # Votos negativos en Referéndum o ceros en otros procesos electorales
+  "character"  # Datos oficiales (Si/No)
+)
+col_widths <- c(2, 4, 2, 1, 2, 2, 3, 2, 100, 1, 3, 3, 3, 8, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 3, 8, 8, 1)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)
+  }
+  else if (grepl("^06", basename(dat_file))){
+    # Specifications for "06" files
+col_names <- c(
+  "type_elec",
+  "year",
+  "month",
+  "round (en procesos a una sola vuelta = 1)",
+  "Código I.N.E. de la provincia",
+  "Código I.N.E. del municipio",
+  "Número de distrito municipal en su caso o 99 si es el total municipal",
+  "Código de la candidatura o del Senador",
+  "Votos obtenidos por la candidatura",
+  "Número de candidatos obtenidos por la candidatura"
+)
+col_classes <- c(
+  "integer",  # type_elec
+  "integer",  # year
+  "integer",  # month
+  "integer",  # round (en procesos a una sola vuelta = 1)
+  "integer",  # Código I.N.E. de la provincia
+  "integer",  # Código I.N.E. del municipio
+  "integer",  # Número de distrito municipal en su caso o 99 si es el total municipal
+  "integer",  # Código de la candidatura o del Senador
+  "integer",  # Votos obtenidos por la candidatura
+  "integer"   # Número de candidatos obtenidos por la candidatura
+)
+col_widths <- c(2, 4, 2, 1, 2, 3, 2, 6, 8, 3)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)
+  }
+  else if (grepl("^07", basename(dat_file))){
+    # Specifications for "07" files
+col_names <- c(
+  "type_elec",
+  "year",
+  "month",
+  "round (en procesos a una sola vuelta = 1) o Número de pregunta en Referéndum",
+  "Código de la Comunidad Autónoma. En el caso de Total Nacional, llevará 99",
+  "Código I.N.E. de la provincia o 99 si se trata de datos a nivel Total Comunidad o Total Nacional",
+  "Código del Distrito Electoral que corresponda o 9 en datos a nivel Total Provincial, Comunidad o Nacional",
+  "Nombre del ámbito territorial",
+  "Población de derecho",
+  "Número de mesas",
+  "Censo del I.N.E.",
+  "Censo de escrutinio",
+  "Censo C.E.R.E. en escrutinio (Residentes Extranjeros)",
+  "Total votantes C.E.R.E. (Residentes Extranjeros)",
+  "Votantes del primer avance de participación",
+  "Votantes del segundo avance de participación",
+  "Votos en blanco",
+  "Votos nulos",
+  "Votos a candidaturas",
+  "Número de ‘Escaños’ a distribuir cuando el ámbito coincida con la circunscripción electoral o Total de ‘Escaños’ distribuidos en el ámbito. Ceros en el caso de que el ámbito sea inferior a la circunscripción electoral",
+  "Votos afirmativos en Referéndum o ceros en otros procesos electorales",
+  "Votos negativos en Referéndum o ceros en otros procesos electorales",
+  "Datos oficiales (Si/No)"
+)
+col_classes <- c(
+  "integer",  # type_elec
+  "integer",  # year
+  "integer",  # month
+  "integer",  # round (en procesos a una sola vuelta = 1) o Número de pregunta en Referéndum
+  "integer",  # Código de la Comunidad Autónoma. En el caso de Total Nacional, llevará 99
+  "integer",  # Código I.N.E. de la provincia o 99 si se trata de datos a nivel Total Comunidad o Total Nacional
+  "integer",  # Código del Distrito Electoral que corresponda o 9 en datos a nivel Total Provincial, Comunidad o Nacional
+  "character", # Nombre del ámbito territorial
+  "integer",  # Población de derecho
+  "integer",  # Número de mesas
+  "integer",  # Censo del I.N.E.
+  "integer",  # Censo de escrutinio
+  "integer",  # Censo C.E.R.E. en escrutinio (Residentes Extranjeros)
+  "integer",  # Total votantes C.E.R.E. (Residentes Extranjeros)
+  "integer",  # Votantes del primer avance de participación
+  "integer",  # Votantes del segundo avance de participación
+  "integer",  # Votos en blanco
+  "integer",  # Votos nulos
+  "integer",  # Votos a candidaturas
+  "integer",  # Número de ‘Escaños’ a distribuir cuando el ámbito coincida con la circunscripción electoral o Total de ‘Escaños’ distribuidos en el ámbito. Ceros en el caso de que el ámbito sea inferior a la circunscripción electoral
+  "integer",  # Votos afirmativos en Referéndum o ceros en otros procesos electorales
+  "integer",  # Votos negativos en Referéndum o ceros en otros procesos electorales
+  "character"  # Datos oficiales (Si/No)
+)
+col_widths <- c(2, 4, 2, 1, 2, 2, 1, 50, 8, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6, 8, 8, 1)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)
+
+  }
+  else if (grepl("^08", basename(dat_file))){
+  # Specifications for "08" files
+col_names <- c(
+  "type_elec",
+  "year",
+  "month",
+  "round (en procesos a una sola vuelta = 1)",
+  "Código de la Comunidad Autónoma. En el caso de Total Nacional, llevará 99",
+  "Código I.N.E. de la provincia o 99 si se trata de datos a nivel Total Comunidad o Total Nacional",
+  "Código del Distrito Electoral que corresponda o 9 en datos a nivel Total Provincial, Comunidad o Nacional",
+  "Código de la candidatura o del Senador",
+  "Votos obtenidos por la candidatura",
+  "Número de candidatos obtenidos por la candidatura"
+)
+col_classes <- c(
+  "integer",  # type_elec
+  "integer",  # year
+  "integer",  # month
+  "integer",  # round (en procesos a una sola vuelta = 1)
+  "integer",  # Código de la Comunidad Autónoma. En el caso de Total Nacional, llevará 99
+  "integer",  # Código I.N.E. de la provincia o 99 si se trata de datos a nivel Total Comunidad o Total Nacional
+  "integer",  # Código del Distrito Electoral que corresponda o 9 en datos a nivel Total Provincial, Comunidad o Nacional
+  "integer",  # Código de la candidatura o del Senador
+  "integer",  # Votos obtenidos por la candidatura
+  "integer"   # Número de candidatos obtenidos por la candidatura
+)
+col_widths <- c(2, 4, 2, 1, 2, 2, 1, 6, 8, 5)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)
+  }
+  else if (grepl("^09", basename(dat_file))){
+  # Specifications for "09" files
+col_names <- c(
+  "type_elec",
+  "year",
+  "month",
+  "round (en procesos a una sola vuelta = 1) o Número de pregunta en Referéndum",
+  "Código de la Comunidad Autónoma o 99 si se trata del Total Nacional del C.E.R.A.",
+  "Código I.N.E. de la provincia o 99 si se trata del Total Nacional o Autonómico del C.E.R.A.",
+  "Código I.N.E. del municipio (999 = C.E.R.A.)",
+  "Número de distrito municipal en su caso o 01 si el municipio no tiene distritos (distrito único). En el caso de datos procedentes del C.E.R.A., llevará el número del ‘Distrito Electoral’ a que correspondan o 09 si el ámbito de dicho distrito coincide con el de la provincia.",
+  "Código de la sección (tres dígitos seguidos de un espacio, letra mayúscula u otro dígito)",
+  "Código de la mesa (una letra mayúscula identificando la mesa o una ‘U’ en caso de mesa única)",
+  "Censo del I.N.E.",
+  "Censo de escrutinio o censo C.E.R.A.",
+  "Censo C.E.R.E. en escrutinio (Residentes Extranjeros)",
+  "Total votantes C.E.R.E. (Residentes Extranjeros)",
+  "Votantes del primer avance de participación",
+  "Votantes del segundo avance de participación",
+  "Votos en blanco",
+  "Votos nulos",
+  "Votos a candidaturas",
+  "Votos afirmativos en Referéndum o ceros en otros procesos electorales",
+  "Votos negativos en Referéndum o ceros en otros procesos electorales",
+  "Datos oficiales (Si/No)"
+)
+col_classes <- c(
+  "integer",  # type_elec
+  "integer",  # year
+  "integer",  # month
+  "integer",  # round (en procesos a una sola vuelta = 1) o Número de pregunta en Referéndum
+  "integer",  # Código de la Comunidad Autónoma o 99 si se trata del Total Nacional del C.E.R.A.
+  "integer",  # Código I.N.E. de la provincia o 99 si se trata del Total Nacional o Autonómico del C.E.R.A.
+  "integer",  # Código I.N.E. del municipio (999 = C.E.R.A.)
+  "integer",  # Número de distrito municipal en su caso o 01 si el municipio no tiene distritos (distrito único). En el caso de datos procedentes del C.E.R.A., llevará el número del ‘Distrito Electoral’ a que correspondan o 09 si el ámbito de dicho distrito coincide con el de la provincia.
+  "character", # Código de la sección (tres dígitos seguidos de un espacio, letra mayúscula u otro dígito)
+  "character", # Código de la mesa (una letra mayúscula identificando la mesa o una ‘U’ en caso de mesa única)
+  "integer",  # Censo del I.N.E.
+  "integer",  # Censo de escrutinio o censo C.E.R.A.
+  "integer",  # Censo C.E.R.E. en escrutinio (Residentes Extranjeros)
+  "integer",  # Total votantes C.E.R.E. (Residentes Extranjeros)
+  "integer",  # Votantes del primer avance de participación
+  "integer",  # Votantes del segundo avance de participación
+  "integer",  # Votos en blanco
+  "integer",  # Votos nulos
+  "integer",  # Votos a candidaturas
+  "integer",  # Votos afirmativos en Referéndum o ceros en otros procesos electorales
+  "integer",  # Votos negativos en Referéndum o ceros en otros procesos electorales
+  "character"  # Datos oficiales (Si/No)
+)
+col_widths <- c(2, 4, 2, 1, 2, 2, 3, 2, 4, 1, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 1)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)
+  }
+  else if (grepl("^10", basename(dat_file))){
+    # Specifications for "10" files
+col_names <- c(
+  "type_elec",
+  "year",
+  "month",
+  "round (en procesos a una sola vuelta = 1)",
+  "Código de la Comunidad Autónoma o 99 si se trata del Total Nacional del C.E.R.A.",
+  "Código I.N.E. de la provincia o 99 si se trata del Total Nacional o Autonómico del C.E.R.A.",
+  "Código I.N.E. del municipio (999 = C.E.R.A.)",
+  "Número de distrito municipal en su caso o 01 si el municipio no tiene distritos (distrito único). En el caso de datos procedentes del C.E.R.A., llevará el número del ‘Distrito Electoral’ a que correspondan o 09 si el ámbito de dicho distrito coincide con el de la provincia.",
+  "Código de la sección (tres dígitos seguidos de un espacio, letra mayúscula u otro dígito)",
+  "Código de la mesa (una letra mayúscula identificando la mesa o una ‘U’ en caso de mesa única)",
+  "Código de la candidatura o del Senador en elecciones al Senado",
+  "Votos obtenidos por la candidatura o el Senador"
+)
+col_classes <- c(
+  "integer",  # type_elec
+  "integer",  # year
+  "integer",  # month
+  "integer",  # round (en procesos a una sola vuelta = 1)
+  "integer",  # Código de la Comunidad Autónoma o 99 si se trata del Total Nacional del C.E.R.A.
+  "integer",  # Código I.N.E. de la provincia o 99 si se trata del Total Nacional o Autonómico del C.E.R.A.
+  "integer",  # Código I.N.E. del municipio (999 = C.E.R.A.)
+  "integer",  # Número de distrito municipal en su caso o 01 si el municipio no tiene distritos (distrito único). En el caso de datos procedentes del C.E.R.A., llevará el número del ‘Distrito Electoral’ a que correspondan o 09 si el ámbito de dicho distrito coincide con el de la provincia.
+  "character", # Código de la sección (tres dígitos seguidos de un espacio, letra mayúscula u otro dígito)
+  "character", # Código de la mesa (una letra mayúscula identificando la mesa o una ‘U’ en caso de mesa única)
+  "integer",  # Código de la candidatura o del Senador en elecciones al Senado
+  "integer"   # Votos obtenidos por la candidatura o el Senador
+)
+col_widths <- c(2, 4, 2, 1, 2, 2, 3, 2, 4, 1, 6, 7)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)
+  }
+    else if (grepl("^11", basename(dat_file))){
+      # Specifications for "11" files
+col_names <- c(
+  "Tipo de municipio",
+  "year",
+  "month",
+  "round (en procesos a una sola vuelta = 1)",
+  "Código de la Comunidad Autónoma",
+  "Código I.N.E. de la provincia",
+  "Código I.N.E. del municipio",
+  "Nombre del municipio",
+  "Código del Partido Judicial",
+  "Código de la Diputación Provincial",
+  "Código de la comarca",
+  "Población de derecho",
+  "Número de mesas",
+  "Censo del I.N.E.",
+  "Censo de escrutinio",
+  "Censo C.E.R.E. en escrutinio (Residentes Extranjeros)",
+  "Total votantes C.E.R.E. (Residentes Extranjeros)",
+  "Votantes del primer avance de participación",
+  "Votantes del segundo avance de participación",
+  "Votos en blanco",
+  "Votos nulos",
+  "Votos a candidaturas",
+  "Número de ‘Escaños’ a distribuir",
+  "Datos oficiales (Si/No)"
+)
+col_classes <- c(
+  "integer",  # Tipo de municipio
+  "integer",  # year
+  "integer",  # month
+  "integer",  # round (en procesos a una sola vuelta = 1)
+  "integer",  # Código de la Comunidad Autónoma
+  "integer",  # Código I.N.E. de la provincia
+  "integer",  # Código I.N.E. del municipio
+  "character", # Nombre del municipio
+  "integer",  # Código del Partido Judicial
+  "integer",  # Código de la Diputación Provincial
+  "integer",  # Código de la comarca
+  "integer",  # Población de derecho
+  "integer",  # Número de mesas
+  "integer",  # Censo del I.N.E.
+  "integer",  # Censo de escrutinio
+  "integer",  # Censo C.E.R.E. en escrutinio (Residentes Extranjeros)
+  "integer",  # Total votantes C.E.R.E. (Residentes Extranjeros)
+  "integer",  # Votantes del primer avance de participación
+  "integer",  # Votantes del segundo avance de participación
+  "integer",  # Votos en blanco
+  "integer",  # Votos nulos
+  "integer",  # Votos a candidaturas
+  "integer",  # Número de ‘Escaños’ a distribuir
+  "character"  # Datos oficiales (Si/No)
+)
+col_widths <- c(2, 4, 2, 1, 2, 2, 3, 100, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)
+    }
+  else if (grepl("^12", basename(dat_file))){
+    # Specifications for "12" files
+col_names <- c(
+  "Tipo de municipio",
+  "Año del proceso electoral",
+  "Mes del proceso electoral",
+  "Número de vuelta (en procesos a una sola vuelta = 1)",
+  "Código I.N.E. de la provincia",
+  "Código I.N.E. del municipio",
+  "Código de la candidatura",
+  "Votos obtenidos por la candidatura",
+  "Número de candidatos obtenidos por la candidatura",
+  "Nombre del candidato",
+  "Primer apellido del candidato",
+  "Segundo apellido del candidato",
+  "Sexo del candidato (Masculino/Femenino)",
+  "Fecha de nacimiento del candidato (DIA)",
+  "Fecha de nacimiento del candidato (MES)",
+  "Fecha de nacimiento del candidato (AÑO)",
+  "D.N.I. del candidato",
+  "Votos obtenidos por el candidato",
+  "Candidato elegido (Si/No)"
+)
+col_classes <- c(
+  "integer",  # Tipo de municipio
+  "integer",  # Año del proceso electoral
+  "integer",  # Mes del proceso electoral
+  "integer",  # Número de vuelta (en procesos a una sola vuelta = 1)
+  "integer",  # Código I.N.E. de la provincia
+  "integer",  # Código I.N.E. del municipio
+  "integer",  # Código de la candidatura
+  "integer",  # Votos obtenidos por la candidatura
+  "integer",  # Número de candidatos obtenidos por la candidatura
+  "character", # Nombre del candidato
+  "character", # Primer apellido del candidato
+  "character", # Segundo apellido del candidato
+  "character", # Sexo del candidato (Masculino/Femenino)
+  "integer",  # Fecha de nacimiento del candidato (DIA)
+  "integer",  # Fecha de nacimiento del candidato (MES)
+  "integer",  # Fecha de nacimiento del candidato (AÑO)
+  "character", # D.N.I. del candidato
+  "integer",  # Votos obtenidos por el candidato
+  "character"  # Candidato elegido (Si/No)
+)
+col_widths <- c(2, 4, 2, 1, 2, 3, 6, 3, 2, 25, 25, 25, 1, 2, 2, 4, 10, 3, 1)
+# Convert the .dat file to .csv
+    convert_dat_to_csv(dat_file, col_names, col_classes, col_widths)  }
+}
+
+```
