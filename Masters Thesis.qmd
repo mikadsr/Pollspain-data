@@ -2,37 +2,28 @@
 title: "Masters Thesis"
 ---
 
-# Converting from .DAT a .CSV
 ```{r}
 # Load the necessary packages
 library(readr)
 library(dplyr)
 library(stringr)
 # Directory containing the .dat files
-data_directory <- "https://github.com/mikadsr/Pollspain-data/tree/main/02-congress/02198210"
+data_directory <- "C:/Users/mklde/OneDrive/Documents/R stuff/Pollspain-data/02-congress/02198210"
 
 # List of .dat files in the directory
-dat_files <- list.files(path = data_directory, pattern = "//.DAT$", full.names = TRUE)
+dat_files <- list.files(path = data_directory, pattern = "\\.DAT$", full.names = TRUE)
 
 # Source the specifications file
 source("./MIR_data_specs.R")
 
-```
-
-```{r}
-library(readr)
 
 # Define the function to clean and convert .dat files to .csv based on specific structures
-convert_dat_to_csv <- function(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1", output_dir = NULL) {
+convert_dat_to_csv <- function(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1") {
   if (!file.exists(dat_file)) {
     warning(paste("File does not exist:", dat_file))
     return(NULL)
   }
   
-  if (is.null(output_dir)) {
-    output_dir <- dirname(dat_file)
-  }
-
   # Read the file line by line to clean up invalid inputs and ensure the file ends correctly
   lines <- read_lines(dat_file, locale = locale(encoding = encoding))
   
@@ -62,7 +53,7 @@ convert_dat_to_csv <- function(dat_file, col_names, col_classes, starts, ends, e
   }
   
   # Create the .csv file path by replacing .DAT with .csv
-  csv_file <- file.path(output_dir, sub("\\.DAT$", ".csv", basename(dat_file), ignore.case = TRUE))
+  csv_file <- sub("\\.DAT$", ".csv", dat_file, ignore.case = TRUE)
   
   # Write the data to a .csv file with the specified encoding
   write_csv(data, csv_file, na = "", append = FALSE)
@@ -70,6 +61,7 @@ convert_dat_to_csv <- function(dat_file, col_names, col_classes, starts, ends, e
   # Remove the temporary file
   unlink(temp_file)
 }
+
 
 ```
 
@@ -83,15 +75,15 @@ for (dat_file in dat_files) {
   starts <- c(1,3,7,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25)
     ends <- c(2,6,8,9,10,11,12,13,14,15,16,17,18,20,20,21,22,23,24,25)
   # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")} 
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1" )} 
   else if (grepl("^02", basename(dat_file))) {
     # Specifications for "02" files
 col_names <- col_names02
-col_classes <- coll_classes02
+col_classes <- col_classes02
 starts <- c(1, 3, 7, 9, 10, 11, 13, 15, 17, 21, 26, 31, 36)
   ends <- c(2, 6, 8, 9,10,12,14,16,20,25,30,35,40)
   # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
     } 
   else if (grepl("^03", basename(dat_file))) {
     # Specifications for "03" files
@@ -100,7 +92,7 @@ col_classes <- col_classes03
 starts <- c(1, 3, 7, 9, 15, 65, 215, 221, 227)
     ends <- c(2, 6, 8, 14, 64, 214, 220, 226, 232)
     # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
   }
    else if (grepl("^04", basename(dat_file))) {
     # Specifications for "04" files with tolerance for name fields
@@ -109,7 +101,7 @@ starts <- c(1, 3, 7, 9, 15, 65, 215, 221, 227)
  starts <- c(1, 3, 7, 9, 10, 12, 13, 16, 22, 25, 26,51, 76, 101, 102, 104, 106, 110, 120)
     ends <- c(2, 6, 8, 9, 11, 12, 15, 21, 24, 25, 50, 75, 100, 101, 103, 105, 109, 119, 120)    
     # Convert the .dat file to .csv with specified encoding
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
   }
   else if (grepl("^05", basename(dat_file))){
     # Specifications for "05" files
@@ -119,7 +111,7 @@ starts <- c(1, 3, 7, 9, 10, 12, 14, 17, 19, 119, 120, 123, 126, 129, 137, 142, 1
 ends <- c(2, 6, 8, 9, 11, 13, 16, 18, 118, 119, 122, 125, 128, 136, 141, 149, 157, 165, 173, 181, 189, 197, 205, 213, 216, 224, 232, 233)
 
 # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
   }
   else if (grepl("^06", basename(dat_file))){
     # Specifications for "06" files
@@ -128,7 +120,7 @@ col_classes <-col_classes06
 starts <- c(1, 3, 7, 9, 10, 12, 15, 17, 23, 31)
 ends <- c(2, 6, 8, 9, 11, 14, 16, 22, 30, 33)
 # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
   }
   else if (grepl("^07", basename(dat_file))){
     # Specifications for "07" files
@@ -137,7 +129,7 @@ col_classes <-col_classes07
 starts <- c(1, 3, 7, 9, 10, 12, 14, 15, 65, 73, 78, 86, 94, 102, 110, 118, 126, 134, 142, 150, 156, 164, 172)
 ends <- c(2, 6, 8, 9, 11, 13, 14, 64, 72, 77, 85, 93, 101, 109, 117, 125, 133, 141, 149, 155, 163, 171, 172)
 # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
 
   }
   else if (grepl("^08", basename(dat_file))){
@@ -147,7 +139,7 @@ col_classes <-col_classes08
 starts <- c(1, 3, 7, 9, 10, 12, 14, 15, 21, 29)
 ends <- c(2, 6, 8, 9, 11, 13, 14, 20, 28, 33)
 # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
   }
   else if (grepl("^09", basename(dat_file))){
   # Specifications for "09" files
@@ -156,7 +148,7 @@ col_classes <- col_classes09
 starts <- c(1, 3, 7, 9, 10, 12, 14, 17, 19, 23, 24, 31, 38, 45, 52, 59, 66, 73, 80, 87, 94, 101)
 ends <- c(2, 6, 8, 9, 11, 13, 16, 18, 22, 23, 30, 37, 44, 51, 58, 65, 72, 79, 86, 93, 100, 101)
 # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
   }
   else if (grepl("^10", basename(dat_file))){
     # Specifications for "10" files
@@ -165,7 +157,7 @@ col_classes <- col_classes10
 starts <- c(1, 3, 7, 9, 10, 12, 14, 17, 19, 23, 24, 30)
 ends <- c(2, 6, 8, 9, 11, 13, 16, 18, 22, 23, 29, 36)
 # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
   }
     else if (grepl("^11", basename(dat_file))){
       # Specifications for "11" files
@@ -174,7 +166,7 @@ col_classes <- col_classes11
 starts <- c(1, 3, 7, 9, 10, 12, 14, 17, 117, 120, 123, 126, 129, 131, 134, 137, 140, 143, 146, 149, 152, 155, 158, 160)
 ends <- c(2, 6, 8, 9, 11, 13, 16, 116, 119, 122, 125, 128, 130, 133, 136, 139, 142, 145, 148, 151, 154, 157, 159, 160)
 # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )
     }
   else if (grepl("^12", basename(dat_file))){
     # Specifications for "12" files
@@ -183,7 +175,7 @@ col_classes <- col_classes12
 starts <- c(1, 3, 7, 9, 10, 12, 15, 21, 24, 26, 51, 76, 101, 102, 104, 106, 110, 120, 123)
 ends <- c(2, 6, 8, 9, 11, 14, 20, 23, 25, 50, 75, 100, 101, 103, 105, 109, 119, 122, 123)
 # Convert the .dat file to .csv
-    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1")  }
+    convert_dat_to_csv(dat_file, col_names, col_classes, starts, ends, encoding = "ISO-8859-1"  )  }
 }
 
 ```
