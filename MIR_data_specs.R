@@ -28,7 +28,6 @@ col_descript11 <- c("Tipo de municipio", "Año del proceso electoral.", "Mes del
 col_descript12 <- c("Tipo de municipio", "Año del proceso electoral", "Mes del proceso electoral", "Número de vuelta (en procesos a una sola vuelta = 1)", "Código I.N.E. de la provincia", "Código I.N.E. del municipio", "Código de la candidatura", "Votos obtenidos por la candidatura", "Número de candidatos obtenidos por la candidatura", "Nombre del candidato", "Primer apellido del candidato", "Segundo apellido del candidato", "Sexo del candidato (Masculino/Femenino)", "Fecha de nacimiento del candidato (DIA)", "Fecha de nacimiento del candidato (MES)", "Fecha de nacimiento del candidato (AÑO)", "D.N.I. del candidato", "Votos obtenidos por el candidato", "Candidato elegido (Si/No)")
 
 ## ----------- Colclasses ------------
-
 col_classes01 <- rep("character", length(col_names))
 col_classes02 <- c("integer", "integer", "integer", "integer", "character", "integer", "integer", "integer", "integer", "character", "character", "character", "character")
 col_classes03 <- c("integer", "integer", "integer", "integer", "character", "character", "integer", "integer", "integer")
