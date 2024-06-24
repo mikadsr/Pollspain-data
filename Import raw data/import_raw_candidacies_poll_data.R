@@ -11,6 +11,7 @@ library(lubridate)
 # starts,ends: cut-off points for splitting raw .DAT files into a
 # dataset with several variables.
 
+
 # Ensure the dataset is loaded
 data(dates_elections_spain)  # Use this if the dataset is part of a package
 
@@ -141,7 +142,6 @@ historical_raw_candidacies_poll |>
 rm(list = c("historical_candidacies_poll_congress",
             "historical_candidacies_poll_senate",
             "historical_raw_candidacies_poll"))
-
 
 # Test for candidacies poll data in congress elections in June 1986
 congress_poll_test <- import_raw_candidacies_poll_file("congress", 1986, 6)
