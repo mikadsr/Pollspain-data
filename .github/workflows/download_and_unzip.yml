@@ -1,0 +1,24 @@
+name: Download and Unzip Files
+
+on:
+  push:
+    paths:
+      - 'get auxiliary data/dates_elections_spain.csv'
+
+jobs:
+  download_and_unzip:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up R
+      uses: r-lib/actions/setup-r@v2
+
+    - name: Install required R packages
+      run: |
+        Rscript -e 'install.packages(c("tidyverse", "httr", "glue", "zip"))'
+
+    - name: Run download and unzip script
+      run: Rscript get_auxiliary_data/download_and_unzip.R
