@@ -1,0 +1,120 @@
+cod_elec,type_elec,date_elec,year,month,day,topic,date
+01,referendum,15/12/1976,1976,12,19,Referéndum sobre el Proyecto de Ley para la Reforma Política,1976-12-15
+01,referendum,06/12/1978,1978,12,19,Referéndum para la ratificación de la Constitución española,1978-12-06
+01,referendum,12/03/1986,1986,3,19,Referéndum sobre la permanencia de España en la OTAN,1986-03-12
+01,referendum,20/02/2005,2005,2,20,Referéndum sobre la Constitución Europea en España,2005-02-20
+07,EU,10/06/1987,1987,6,19,NA,1987-06-10
+07,EU,15/06/1989,1989,6,19,NA,1989-06-15
+07,EU,12/06/1994,1994,6,19,NA,1994-06-12
+07,EU,13/06/1999,1999,6,19,NA,1999-06-13
+07,EU,13/06/2004,2004,6,20,NA,2004-06-13
+07,EU,07/06/2009,2009,6,20,NA,2009-06-07
+07,EU,25/05/2014,2014,5,20,NA,2014-05-25
+07,EU,26/05/2019,2019,5,20,NA,2019-05-26
+07,EU,09/06/2024,2024,6,20,NA,2024-06-09
+05,regional,09/03/1980,1980,3,19,Elecciones al Parlamento Vasco de 1980 (I Legislatura),1980-03-09
+05,regional,20/03/1980,1980,3,19,Elecciones al Parlamento de Cataluña de 1980 (I Legislatura),1980-03-20
+05,regional,20/10/1981,1981,10,19,Elecciones al Parlamento de Galicia de 1981 (I Legislatura),1981-10-20
+05,regional,23/05/1982,1982,5,19,Elecciones al Parlamento de Andalucía de 1982 (I Legislatura),1982-05-23
+05,regional,08/05/1983,1983,5,19,"Elecciones autonómicas de España de 1983 (I Legislatura en los Parlamentos Autonómicos de Aragón, Asturias, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunidad Valenciana, Extremadura, La Rioja, Madrid, Murcia y Navarra)",1983-05-08
+05,regional,26/02/1984,1984,2,19,Elecciones al Parlamento Vasco de 1984 (II Legislatura),1984-02-26
+05,regional,29/04/1984,1984,4,19,Elecciones al Parlamento de Cataluña de 1984 (II Legislatura),1984-04-29
+05,regional,24/11/1985,1985,11,19,Elecciones al Parlamento de Galicia de 1985 (II Legislatura),1985-11-24
+05,regional,22/06/1986,1986,6,19,Elecciones al Parlamento de Andalucía de 1986 (II Legislatura),1986-06-22
+05,regional,30/11/1986,1986,11,19,Elecciones al Parlamento Vasco de 1986 (III Legislatura),1986-11-30
+05,regional,10/06/1987,1987,6,19,"Elecciones autonómicas de España de 1987 (II Legislatura en los Parlamentos Autonómicos de Aragón, Asturias, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunidad Valenciana, Extremadura, La Rioja, Madrid, Murcia y Navarra)",1987-06-10
+05,regional,29/05/1988,1988,5,19,Elecciones al Parlamento de Cataluña de 1988 (III Legislatura),1988-05-29
+05,regional,17/12/1989,1989,12,19,Elecciones al Parlamento de Galicia de 1989 (III Legislatura),1989-12-17
+05,regional,23/06/1990,1990,6,19,Elecciones al Parlamento de Andalucía de 1990 (III Legislatura),1990-06-23
+05,regional,28/10/1990,1990,10,19,Elecciones al Parlamento Vasco de 1990 (IV Legislatura),1990-10-28
+05,regional,26/05/1991,1991,5,19,"Elecciones autonómicas de España de 1991 (III Legislatura en los Parlamentos Autonómicos de Aragón, Asturias, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunidad Valenciana, Extremadura, La Rioja, Madrid, Murcia y Navarra)",1991-05-26
+05,regional,15/03/1992,1992,3,19,Elecciones al Parlamento de Cataluña de 1992 (IV Legislatura),1992-03-15
+05,regional,17/10/1993,1993,10,19,Elecciones al Parlamento de Galicia de 1993 (IV Legislatura),1993-10-17
+05,regional,12/06/1994,1994,6,19,Elecciones al Parlamento de Andalucía de 1994 (IV Legislatura),1994-06-12
+05,regional,23/10/1994,1994,10,19,Elecciones al Parlamento Vasco de 1994 (V Legislatura),1994-10-23
+05,regional,28/05/1995,1995,5,19,"Elecciones autonómicas de España de 1995 (IV Legislatura en los Parlamentos Autonómicos de Aragón, Asturias, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunidad Valenciana, Extremadura, La Rioja, Madrid, Murcia y Navarra)",1995-05-28
+05,regional,19/11/1995,1995,11,19,Elecciones al Parlamento de Cataluña de 1995 (V Legislatura),1995-11-19
+05,regional,03/03/1996,1996,3,19,Elecciones al Parlamento de Andalucía de 1996 (V Legislatura),1996-03-03
+05,regional,19/10/1997,1997,10,19,Elecciones al Parlamento de Galicia de 1997 (V Legislatura),1997-10-19
+05,regional,25/10/1998,1998,10,19,Elecciones al Parlamento Vasco de 1998 (VI Legislatura),1998-10-25
+05,regional,13/06/1999,1999,6,19,"Elecciones autonómicas de España de 1999 (V Legislatura en los Parlamentos Autonómicos de Aragón, Asturias, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunidad Valenciana, Extremadura, La Rioja, Madrid, Murcia y Navarra)",1999-06-13
+05,regional,17/10/1999,1999,10,19,Elecciones al Parlamento de Cataluña de 1999 (VI Legislatura),1999-10-17
+05,regional,12/03/2000,2000,3,20,Elecciones al Parlamento de Andalucía de 2000 (VI Legislatura),2000-03-12
+05,regional,13/05/2001,2001,5,20,Elecciones al Parlamento Vasco de 2001 (VII Legislatura),2001-05-13
+05,regional,21/10/2001,2001,10,20,Elecciones al Parlamento de Galicia de 2001 (VI Legislatura),2001-10-21
+05,regional,25/05/2003,2003,5,20,"Elecciones autonómicas de España de 2003 (VI Legislatura en los Parlamentos Autonómicos de Aragón, Asturias, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunidad Valenciana, Extremadura, La Rioja, Madrid, Murcia y Navarra)",2003-05-25
+05,regional,26/10/2003,2003,10,20,Elecciones a la Asamblea de Madrid de octubre de 2003 (VII Legislatura),2003-10-26
+05,regional,16/11/2003,2003,11,20,Elecciones al Parlamento de Cataluña de 2003 (VII Legislatura),2003-11-16
+05,regional,14/03/2004,2004,3,20,Elecciones al Parlamento de Andalucía de 2004 (VII Legislatura),2004-03-14
+05,regional,17/04/2005,2005,4,20,Elecciones al Parlamento Vasco de 2005 (VIII Legislatura),2005-04-17
+05,regional,19/06/2005,2005,6,20,Elecciones al Parlamento de Galicia de 2005 (VII Legislatura),2005-06-19
+05,regional,01/11/2006,2006,11,20,Elecciones al Parlamento de Cataluña de 2006 (VIII Legislatura),2006-11-01
+05,regional,27/05/2007,2007,5,20,"Elecciones autonómicas de España de 2007 (VII Legislatura en los Parlamentos Autonómicos de Aragón, Asturias, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunidad Valenciana, Extremadura, La Rioja, Murcia y Navarra; VIII Legislatura en la Asamblea de Madrid)",2007-05-27
+05,regional,09/03/2008,2008,3,20,Elecciones al Parlamento de Andalucía de 2008 (VIII Legislatura),2008-03-09
+05,regional,01/03/2009,2009,3,20,Elecciones al Parlamento de Galicia de 2009 y Elecciones al Parlamento Vasco de 2009 (VIII Legislatura y IX Legislatura respectivamente),2009-03-01
+05,regional,28/11/2010,2010,11,20,Elecciones al Parlamento de Cataluña de 2010 (IX Legislatura),2010-11-28
+05,regional,22/05/2011,2011,5,20,"Elecciones autonómicas de España de 2011 (VIII Legislatura en los Parlamentos Autonómicos de Aragón, Asturias, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunidad Valenciana, Extremadura, La Rioja, Murcia y Navarra; IX Legislatura en la Asamblea de Madrid)",2011-05-22
+05,regional,25/03/2012,2012,3,20,Elecciones al Parlamento de Andalucía de 2012 y Elecciones a la Junta General del Principado de Asturias de 2012 (IX Legislatura en ambas),2012-03-25
+05,regional,21/10/2012,2012,10,20,Elecciones al Parlamento de Galicia de 2012 y Elecciones al Parlamento Vasco de 2012 (IX Legislatura y X Legislatura respectivamente),2012-10-21
+05,regional,25/11/2012,2012,11,20,Elecciones al Parlamento de Cataluña de 2012 (X Legislatura),2012-11-25
+05,regional,22/03/2015,2015,3,20,Elecciones al Parlamento de Andalucía de 2015 (X Legislatura),2015-03-22
+05,regional,24/05/2015,2015,5,20,"Elecciones autonómicas de España de 2015 (IX Legislatura en los Parlamentos Autonómicos de Aragón, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunidad Valenciana, Extremadura, La Rioja, Murcia y Navarra; X Legislatura en los Parlamentos Autonómicos de Madrid y Asturias)",2015-05-24
+05,regional,27/09/2015,2015,9,20,Elecciones al Parlamento de Cataluña de 2015 (XI Legislatura),2015-09-27
+05,regional,25/09/2016,2016,9,20,Elecciones al Parlamento de Galicia de 2016 y Elecciones al Parlamento Vasco de 2016 (X Legislatura y XI Legislatura respectivamente),2016-09-25
+05,regional,21/12/2017,2017,12,20,Elecciones al Parlamento de Cataluña de 2017 (XII Legislatura),2017-12-21
+05,regional,02/12/2018,2018,12,20,Elecciones al Parlamento de Andalucía de 2018 (XI Legislatura),2018-12-02
+05,regional,28/04/2019,2019,4,20,Elecciones a las Cortes Valencianas de 2019 (X Legislatura),2019-04-28
+05,regional,26/05/2019,2019,5,20,"Elecciones autonómicas de España de 2019 (X Legislatura en los Parlamentos Autonómicos de Aragón, Baleares, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Extremadura, La Rioja, Murcia y Navarra; XI Legislatura en los Parlamentos Autonómicos de Madrid y Asturias)",2019-05-26
+05,regional,12/07/2020,2020,7,20,Elecciones al Parlamento de Galicia de 2020 y Elecciones al Parlamento Vasco de 2020 (XI Legislatura y XII Legislatura respectivamente),2020-07-12
+05,regional,14/02/2021,2021,2,20,Elecciones al Parlamento de Cataluña de 2021 (XIII Legislatura),2021-02-14
+05,regional,04/05/2021,2021,5,20,Elecciones a la Asamblea de Madrid de 2021 (XII legislatura),2021-05-04
+05,regional,13/02/2022,2022,2,20,Elecciones a las Cortes de Castilla y León de 2022 (XI legislatura),2022-02-13
+05,regional,19/06/2022,2022,6,20,Elecciones al Parlamento de Andalucía de 2022 (XII legislatura),2022-06-19
+05,regional,28/05/2023,2023,5,20,"Elecciones autonómicas de España de 2023 (XI Legislatura en los Parlamentos Autonómicos de Aragón, Baleares, Canarias, Cantabria, Castilla-La Mancha, Extremadura, La Rioja, Murcia, Navarra y Valencia; XII Legislatura en el Parlamento Autonómico de Asturias y XIII Legislatura en el Parlamento Autonómico de Madrid)",2023-05-28
+05,regional,18/02/2024,2024,2,20,Elecciones al Parlamento de Galicia de 2024 (XII legislatura),2024-02-18
+05,regional,21/04/2024,2024,4,20,Elecciones al Parlamento Vasco de 2024 (XIII legislatura),2024-04-21
+05,regional,12/05/2024,2024,5,20,Elecciones al Parlamento de Cataluña de 2024 (XIV legislatura),2024-05-12
+04,local,03/04/1979,1979,4,19,NA,1979-04-03
+04,local,08/05/1983,1983,5,19,NA,1983-05-08
+04,local,10/06/1987,1987,6,19,NA,1987-06-10
+04,local,26/05/1991,1991,5,19,NA,1991-05-26
+04,local,28/05/1995,1995,5,19,NA,1995-05-28
+04,local,13/06/1999,1999,6,19,NA,1999-06-13
+04,local,25/05/2003,2003,5,20,NA,2003-05-25
+04,local,27/05/2007,2007,5,20,NA,2007-05-27
+04,local,22/05/2011,2011,5,20,NA,2011-05-22
+04,local,24/05/2015,2015,5,20,NA,2015-05-24
+04,local,26/05/2019,2019,5,20,NA,2019-05-26
+04,local,28/05/2023,2023,5,20,NA,2023-05-28
+02,congress,15/06/1977,1977,6,19,NA,1977-06-15
+02,congress,01/03/1979,1979,3,19,NA,1979-03-01
+02,congress,28/10/1982,1982,10,19,NA,1982-10-28
+02,congress,22/06/1986,1986,6,19,NA,1986-06-22
+02,congress,29/10/1989,1989,10,19,NA,1989-10-29
+02,congress,06/06/1993,1993,6,19,NA,1993-06-06
+02,congress,03/03/1996,1996,3,19,NA,1996-03-03
+02,congress,12/03/2000,2000,3,20,NA,2000-03-12
+02,congress,14/03/2004,2004,3,20,NA,2004-03-14
+02,congress,09/03/2008,2008,3,20,NA,2008-03-09
+02,congress,20/11/2011,2011,11,20,NA,2011-11-20
+02,congress,20/12/2015,2015,12,20,NA,2015-12-20
+02,congress,26/06/2016,2016,6,20,NA,2016-06-26
+02,congress,28/04/2019,2019,4,20,NA,2019-04-28
+02,congress,10/11/2019,2019,11,20,NA,2019-11-10
+02,congress,23/07/2023,2023,7,20,NA,2023-07-23
+03,senate,15/06/1977,1977,6,19,NA,1977-06-15
+03,senate,01/03/1979,1979,3,19,NA,1979-03-01
+03,senate,28/10/1982,1982,10,19,NA,1982-10-28
+03,senate,22/06/1986,1986,6,19,NA,1986-06-22
+03,senate,29/10/1989,1989,10,19,NA,1989-10-29
+03,senate,06/06/1993,1993,6,19,NA,1993-06-06
+03,senate,03/03/1996,1996,3,19,NA,1996-03-03
+03,senate,12/03/2000,2000,3,20,NA,2000-03-12
+03,senate,14/03/2004,2004,3,20,NA,2004-03-14
+03,senate,09/03/2008,2008,3,20,NA,2008-03-09
+03,senate,20/11/2011,2011,11,20,NA,2011-11-20
+03,senate,20/12/2015,2015,12,20,NA,2015-12-20
+03,senate,26/06/2016,2016,6,20,NA,2016-06-26
+03,senate,28/04/2019,2019,4,20,NA,2019-04-28
+03,senate,10/11/2019,2019,11,20,NA,2019-11-10
+03,senate,23/07/2023,2023,7,20,NA,2023-07-23

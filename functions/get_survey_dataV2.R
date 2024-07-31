@@ -1,0 +1,229 @@
+library(dplyr)
+library(stringr)
+library(readr)
+library(purrr)
+library(httr)
+library(glue)
+library(lubridate)
+
+#' Get Survey Data from GitHub
+#'
+#' This function fetches and processes survey data from the specified GitHub directory.
+#'
+#' @param from The start year for fetching surveys (default is 1982)
+#' @param to The end year for fetching surveys (default is 2023)
+#' @param min_days_to Minimum number of days to the election for filtering (default is NULL)
+#' @param max_days_to Maximum number of days to the election for filtering (default is NULL)
+#' @param select_polling_firm String matching in polling_firm column (default is "all")
+#' @param select_media String matching in media column (default is "all")
+#' @param select_parties Character vector specifying which columns (parties) to keep (default is "all")
+#' @param min_field_days Minimum number of fieldwork days (default is NULL)
+#' @param max_field_days Maximum number of fieldwork days (default is NULL)
+#' @param min_size Minimum sample size (default is NULL)
+#' @param include_media Whether to include media information (default is TRUE)
+#' @return Data frame of processed survey data
+#' @importFrom dplyr mutate filter select
+#' @importFrom readr read_csv
+#' @importFrom httr GET content stop_for_status
+#' @importFrom glue glue
+#' @importFrom lubridate dmy
+#' @importFrom purrr map compact
+#' @export
+#' @examples
+#' # Correct usage
+#' b <- get_survey_data(from = 1982, to = 1986, min_days_to = 3)
+#' print(head(b))
+#'
+#' # Incorrect usage
+#' # b <- get_survey_data(from = 1986, to = 1982)
+#' # b <- get_survey_data(from = 1982, to = 2023, min_days_to = "three")
+get_survey_data <- function(from = 1982, to = 2023, 
+                            min_days_to = NULL, 
+                            max_days_to = NULL,
+                            select_polling_firm = "all",
+                            select_media = "all",
+                            select_parties = "all",
+                            min_field_days = NULL,
+                            max_field_days = NULL,
+                            min_size = NULL,
+                            include_media = TRUE) {
+  message("Please wait, depending on your internet connection and period requested this may take a while.")
+  
+  # Local helper function to read CSV file from GitHub
+  read_csv_from_github <- function(url) {
+    file_name <- basename(url)
+    response <- GET(url)
+    stop_for_status(response)
+    content <- content(response, as = "text")
+    message(glue("Getting data from {file_name}"))
+    read_csv(content, col_types = cols())  # Suppress column specification messages
+  }
+  
+  base_url <- "https://raw.githubusercontent.com/mikadsr/Pollspain-data/main/survey%20data/"
+  
+  # Create a sequence of years and months
+  years <- seq(from, to)
+  months <- sprintf("%02d", 1:12)
+  
+  # Generate all possible file names
+  file_names <- expand.grid(year = years, month = months) %>%
+    mutate(file_name = glue("POLL_02{year}{month}.csv"))
+  
+  # Generate URLs
+  urls <- file_names %>%
+    mutate(url = glue("{base_url}{file_name}"))
+  
+  # Filter out the future dates that don't have files yet
+  urls <- urls %>%
+    filter(as.numeric(year) < to | (as.numeric(year) == to & as.numeric(month) <= month(Sys.Date())))
+  
+  # Download and read CSV files
+  raw_surveys <- map(urls$url, ~ {
+    tryCatch({
+      read_csv_from_github(.x)
+    }, error = function(e) {
+      NULL
+    })
+  }) %>%
+    compact()  # Remove NULLs
+  
+  # Combine all data frames, automatically filling missing columns with NA
+  raw_surveys <- bind_rows(raw_surveys)
+  
+  # Ensure the date_elec and fieldwork_end columns are present
+  if (!"date_elec" %in% names(raw_surveys)) {
+    stop("The column 'date_elec' is not present in the data.")
+  }
+  if (!"fieldwork_end" %in% names(raw_surveys)) {
+    stop("The column 'fieldwork_end' is not present in the data.")
+  }
+  
+  # Convert date_elec and fieldwork_end to Date objects
+  raw_surveys <- raw_surveys %>%
+    mutate(
+      date_elec = dmy(date_elec),
+      fieldwork_end = dmy(fieldwork_end),
+      fieldwork_start = dmy(fieldwork_start),
+      fieldwork_days = as.numeric(difftime(fieldwork_end, fieldwork_start, units = "days"))
+    )
+  
+  # Apply filtering based on polling_firm
+  if (select_polling_firm != "all") {
+    raw_surveys <- raw_surveys %>%
+      filter(str_detect(polling_firm, select_polling_firm, ignore.case = TRUE))
+  }
+  
+  # Apply filtering based on media
+  if (select_media != "all" && include_media) {
+    raw_surveys <- raw_surveys %>%
+      filter(str_detect(media, select_media, ignore.case = TRUE))
+  }
+  
+  # Apply filtering based on min_field_days and max_field_days
+  if (!is.null(min_field_days)) {
+    raw_surveys <- raw_surveys %>%
+      filter(fieldwork_days >= min_field_days)
+  }
+  
+  if (!is.null(max_field_days)) {
+    raw_surveys <- raw_surveys %>%
+      filter(fieldwork_days <= max_field_days)
+  }
+  
+  # Apply filtering based on min_size
+  if (!is.null(min_size)) {
+    raw_surveys <- raw_surveys %>%
+      filter(sample_size >= min_size)
+  }
+  
+  # Calculate days to election and filter based on min_days_to and max_days_to
+  raw_surveys <- raw_surveys %>%
+    mutate(days_to_elec = as.numeric(difftime(date_elec, fieldwork_end, units = "days")))
+  
+  if (!is.null(min_days_to)) {
+    raw_surveys <- raw_surveys %>%
+      filter(days_to_elec >= min_days_to)
+  }
+  
+  if (!is.null(max_days_to)) {
+    raw_surveys <- raw_surveys %>%
+      filter(days_to_elec <= max_days_to)
+  }
+  
+  # Select specific parties if select_parties is not "all"
+  if (select_parties != "all") {
+    select_columns <- c("polling_firm", "media", "date_elec", "fieldwork_start", "fieldwork_end", "sample_size", "turnout", select_parties)
+    raw_surveys <- raw_surveys %>%
+      select(any_of(select_columns))
+  }
+  
+  # Remove the days_to_elec and fieldwork_days columns after filtering
+  #raw_surveys <- raw_surveys %>%
+    #select(-days_to_elec, -fieldwork_days)
+  
+  return(raw_surveys)
+}
+
+# Example usage
+# Correct usage
+survey_data_1 <- get_survey_data(from = 1982, to = 1986, min_days_to = 3, select_parties = "psoe")
+print(head(survey_data_1))
+
+#EXAMPLES----
+##Correct usage----
+
+# Fetching Data from 1982 to 1986 with Minimum Days to Election
+survey_data_1 <- get_survey_data(from = 1982, to = 1986, min_days_to = 3)
+print(head(survey_data_1))
+
+# Fetching Data from 2000 to 2005 with Maximum Days to Election
+survey_data_2 <- get_survey_data(from = 2000, to = 2005, max_days_to = 100)
+print(head(survey_data_2))
+
+# Fetching Data from 1990 to 1995 without media
+survey_data_3 <- get_survey_data(from = 1990, to = 1995, include_media = FALSE)
+print(head(survey_data_3))
+
+# Fetching Data from 1982 to 2020 with Both Minimum and Maximum Days to Election
+survey_data_4 <- get_survey_data(from = 1982, to = 2020, min_days_to = 10, max_days_to = 200)
+print(head(survey_data_4))
+
+# Fetching Data from 1982 to 2020 with Specific Polling Firm
+survey_data_5 <- get_survey_data(from = 1982, to = 2020, select_polling_firm = "CIS")
+print(head(survey_data_5))
+
+# Fetching Data from 1982 to 2020 with Specific Media
+survey_data_6 <- get_survey_data(from = 1982, to = 2020, select_media = "El País")
+print(head(survey_data_6))
+
+# Fetching Data from 1982 to 2020 with Minimum Sample Size
+survey_data_7 <- get_survey_data(from = 1982, to = 2020, min_size = 1000)
+print(head(survey_data_7))
+
+# Fetching Data from 1982 to 2020 with Specific Parties
+survey_data_8 <- get_survey_data(from = 1982, to = 2020, select_parties = c("psoe", "pp"))
+print(head(survey_data_8))
+
+
+##Incorrect usage----
+
+# End Year Before Start Year
+# This should raise an error or warning
+# Reason: The 'to' year is earlier than the 'from' year, which is logically incorrect.
+# survey_data_9 <- get_survey_data(from = 1986, to = 1982)
+
+# Non-Numeric min_days_to Value
+# This should raise an error
+# Reason: The min_days_to parameter expects a numeric value, but a string is provided.
+# survey_data_10 <- get_survey_data(from = 1982, to = 2023, min_days_to = "three")
+
+# Fetching Data Beyond Available Date Range
+# This should raise an error or return an empty data frame
+# Reason: There are no survey data files available for the specified date range.
+# survey_data_11 <- get_survey_data(from = 1900, to = 1910)
+
+# Invalid Date Range with Future Dates
+# This should raise an error or warning
+# Reason: The specified date range includes future years for which no survey data files exist.
+# survey_data_12 <- get_survey_data(from = 2025, to = 2030)
+
