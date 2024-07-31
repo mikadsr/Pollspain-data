@@ -9,7 +9,7 @@ library(readr)
 # GET LINKS -----
 ##Generate the historical_survey_links_wikipedia tibble ----
 historical_survey_links_wikipedia <- dates_elections_spain %>%
-  filter(cod_elec == 2 & year >= 1982) %>%
+  filter(cod_elec == "02" & year >= 1982) %>%
   mutate(
     year = year,
     month = month.name[month],
@@ -116,7 +116,7 @@ for (name in names(survey_html_list)) {
 }
 
 
-# Function to clean and process the tables
+# CLEAN TABLES ----
 clean_table <- function(df, year, cod_elec, month, date_elec) {
   # Identify rows containing the word "elections"
   df <- df %>%
@@ -147,8 +147,8 @@ clean_table <- function(df, year, cod_elec, month, date_elec) {
       fieldwork_end = if_else(is.na(fieldwork_end), fieldwork_start, fieldwork_end)
     ) %>%
     mutate(
-      fieldwork_start = format(fieldwork_start, "%d/%m/%Y"),
-      fieldwork_end = format(fieldwork_end, "%d/%m/%Y")
+      fieldwork_start = as.Date(fieldwork_start),
+      fieldwork_end = as.Date(fieldwork_end)
     ) %>%
     relocate(fieldwork_start, fieldwork_end, .after = polling_firm) %>%
     mutate(turnout = case_when(
@@ -169,29 +169,29 @@ clean_table <- function(df, year, cod_elec, month, date_elec) {
     mutate(polling_firm = str_remove(polling_firm, "/.*")) %>%  # Remove the media part from polling_firm
     relocate(media, .after = polling_firm) %>%
     select(-has_elections, -field_work_date) %>%  # Remove the helper column after its use
-    mutate(date_elec = date_elec) %>% 
-    relocate(date_elec, .after = fieldwork_end) |> # Move the media column after polling_firm
-    # Add date_elec column
+    mutate(date_elec = as.Date(date_elec)) %>% 
+    relocate(date_elec, .after = fieldwork_end) %>% # Move the media column after polling_firm
     select(-cod_elec)  # Remove the cod_elec column
   
   return(df_cleaned)
 }
 
+
 # Extract and clean tables
 cleaned_voting_intention_tables <- lapply(names(raw_voting_intention_tables), function(name) {
   # Extract the cod_elec and date information from the table name
-  cod_elec <- as.numeric(str_sub(name, 6, 7))
   year <- as.numeric(str_sub(name, 8, 11))
   month <- as.numeric(str_sub(name, 12, 13))
   
   raw_table <- raw_voting_intention_tables[[name]]
   
   # Create a unique key for filtering
-  unique_key <- paste(cod_elec, year, month, sep = "-")
+  unique_key <- paste(year, month, sep = "-")
   
   # Get the corresponding date_elec from dates_elections_spain
   date_elec <- dates_elections_spain %>%
-    mutate(unique_key = paste(cod_elec, year, month, sep = "-")) %>%
+    filter(cod_elec == "02") |> 
+    mutate(unique_key = paste(year, month, sep = "-")) %>%
     filter(unique_key == !!unique_key) %>%
     pull(date_elec)
   
@@ -205,7 +205,35 @@ cleaned_voting_intention_tables <- lapply(names(raw_voting_intention_tables), fu
   return(cleaned_table)
 })
 
+
 names(cleaned_voting_intention_tables) <- names(raw_voting_intention_tables)
+
+
+# Ensure the cleaned tables list is not empty
+#if (length(cleaned_voting_intention_tables) > 0) {
+#  # Define the output directory
+#  output_directory <- "C:/Users/mklde/OneDrive/Documents/R stuff/Pollspain-data/survey data"
+#  
+#  # Check if the directory exists
+#  if (!dir.exists(output_directory)) {
+#    stop("Output directory does not exist: ", output_directory)
+#  }
+#  
+#  # Save cleaned tables to CSV files
+#  for (name in names(cleaned_voting_intention_tables)) {
+#    file_path <- file.path(output_directory, paste0(name, ".csv"))
+#    tryCatch({
+#      write_csv(cleaned_voting_intention_tables[[name]], file_path)
+#      message("Saved file: ", file_path)
+#    }, error = function(e) {
+#      message("Failed to save file: ", file_path, " - ", e$message)
+#    })
+#  }
+#} else {
+#  message("No tables to save.")
+#}
+
+
 
 # Ensure the cleaned tables list is not empty
 if (length(cleaned_voting_intention_tables) > 0) {
@@ -217,11 +245,13 @@ if (length(cleaned_voting_intention_tables) > 0) {
     stop("Output directory does not exist: ", output_directory)
   }
   
-  # Save cleaned tables to CSV files
+  # Save cleaned tables to RDA files
   for (name in names(cleaned_voting_intention_tables)) {
-    file_path <- file.path(output_directory, paste0(name, ".csv"))
+    file_path <- file.path(output_directory, paste0(name, ".rda"))
     tryCatch({
-      write_csv(cleaned_voting_intention_tables[[name]], file_path)
+      # Save the data frame to an RDA file with the object name being the same as the table name
+      assign(name, cleaned_voting_intention_tables[[name]])
+      save(list = name, file = file_path)
       message("Saved file: ", file_path)
     }, error = function(e) {
       message("Failed to save file: ", file_path, " - ", e$message)

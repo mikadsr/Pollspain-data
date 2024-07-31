@@ -116,10 +116,12 @@ rm(referendum_elections,
 
 dates_elections_spain <- dates_elections_spain %>%
   select(cod_elec, type_elec, date_elec, year, month, day, topic) %>%
-  mutate(date = ymd(dmy(date_elec)))
+  mutate(date_elec = ymd(dmy(date_elec))) 
 
-# Write CSV
-write_csv(dates_elections_spain, "dates_elections_spain.csv")
+# Write rda
+save(dates_elections_spain, file = "./get auxiliary data/dates_elections_spain.rda")
 
-rm(general_elections, tables, webpage)
+# Clear all objects from the current environment
+rm(list = ls())
+
    

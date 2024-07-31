@@ -93,8 +93,10 @@ cod_INE_ccaa <-
 
 # ----- muni's codes
 
-cod_INE_mun <-
-  read_csv("./get auxiliary data/cod_INE_mun.csv")
+#cod_INE_mun <-
+#  read_csv("./get auxiliary data/cod_INE_mun.csv")
+
+
 
 # ----- use data: rda -----
 
@@ -109,10 +111,10 @@ usethis::use_data(cod_INE_mun, overwrite = TRUE,
 
 # ----- write_csv -----
 
-write_csv(cod_INE_prov_ccaa, "./Auxiliary data/cod_INE_prov_ccaa.csv")
-write_csv(cod_INE_prov, "./Auxiliary data/cod_INE_prov.csv")
-write_csv(cod_INE_ccaa, "./Auxiliary data/cod_INE_ccaa.csv")
-write_csv(cod_INE_mun, "./Auxiliary data/cod_INE_mun.csv")
+save(cod_INE_prov_ccaa, file = "./get auxiliary data/cod_INE_prov_ccaa.rda")
+save(cod_INE_prov, file ="./get auxiliary data/cod_INE_prov.rda")
+save(cod_INE_ccaa, file ="./get auxiliary data/cod_INE_ccaa.rda")
+save(cod_INE_mun, file ="./get auxiliary data/cod_INE_mun.rda")
 
 
 
