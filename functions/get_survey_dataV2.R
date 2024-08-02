@@ -1,10 +1,7 @@
 library(dplyr)
-library(stringr)
-library(readr)
+library(glue)
 library(purrr)
 library(httr)
-library(glue)
-library(lubridate)
 
 #' Get Survey Data from GitHub
 #'
@@ -21,22 +18,38 @@ library(lubridate)
 #' @param max_field_days Maximum number of fieldwork days (default is NULL)
 #' @param min_size Minimum sample size (default is NULL)
 #' @param include_media Whether to include media information (default is TRUE)
+#' @param include_exit_polls Whether to include exit polls in the data (default is TRUE)
 #' @return Data frame of processed survey data
 #' @importFrom dplyr mutate filter select
-#' @importFrom readr read_csv
 #' @importFrom httr GET content stop_for_status
 #' @importFrom glue glue
-#' @importFrom lubridate dmy
+#' @importFrom lubridate dmy as.Date
 #' @importFrom purrr map compact
+#' @author DeSmedt, Mikaela. 
 #' @export
 #' @examples
 #' # Correct usage
-#' b <- get_survey_data(from = 1982, to = 1986, min_days_to = 3)
-#' print(head(b))
+#' survey_data <- get_survey_data(from = 1982, to = 1986, min_days_to = 3)
+#' print(head(survey_data))
+#'
+#' # Exclude exit polls
+#' survey_data <- get_survey_data(from = 1982, to = 1986, include_exit_polls = FALSE)
+#' print(head(survey_data))
 #'
 #' # Incorrect usage
-#' # b <- get_survey_data(from = 1986, to = 1982)
-#' # b <- get_survey_data(from = 1982, to = 2023, min_days_to = "three")
+#' # survey_data <- get_survey_data(from = 1986, to = 1982)
+#' # survey_data <- get_survey_data(from = 1982, to = 2023, min_days_to = "three")
+
+
+
+# Load necessary libraries
+library(dplyr)
+library(httr)
+library(glue)
+library(lubridate)
+library(purrr)
+
+# Function to get survey data
 get_survey_data <- function(from = 1982, to = 2023, 
                             min_days_to = NULL, 
                             max_days_to = NULL,
@@ -46,20 +59,22 @@ get_survey_data <- function(from = 1982, to = 2023,
                             min_field_days = NULL,
                             max_field_days = NULL,
                             min_size = NULL,
-                            include_media = TRUE) {
+                            include_media = TRUE,
+                            include_exit_polls = TRUE) {
   message("Please wait, depending on your internet connection and period requested this may take a while.")
   
-  # Local helper function to read CSV file from GitHub
-  read_csv_from_github <- function(url) {
-    file_name <- basename(url)
-    response <- GET(url)
-    stop_for_status(response)
-    content <- content(response, as = "text")
-    message(glue("Getting data from {file_name}"))
-    read_csv(content, col_types = cols())  # Suppress column specification messages
+  # Local helper function to read RDA file from GitHub
+  read_rda_from_github <- function(url) {
+    temp_file <- tempfile(fileext = ".rda")
+    GET(url, write_disk(temp_file, overwrite = TRUE))
+    temp_env <- new.env()
+    load(temp_file, envir = temp_env)
+    df_name <- ls(temp_env)
+    data <- get(df_name, envir = temp_env)
+    return(data)
   }
   
-  base_url <- "https://raw.githubusercontent.com/mikadsr/Pollspain-data/main/survey%20data/"
+  base_url <- "https://github.com/mikadsr/Pollspain-data/blob/main/survey%20data/"
   
   # Create a sequence of years and months
   years <- seq(from, to)
@@ -67,28 +82,30 @@ get_survey_data <- function(from = 1982, to = 2023,
   
   # Generate all possible file names
   file_names <- expand.grid(year = years, month = months) %>%
-    mutate(file_name = glue("POLL_02{year}{month}.csv"))
+    mutate(file_name = glue("POLL_02{year}{month}.rda"))
   
   # Generate URLs
   urls <- file_names %>%
-    mutate(url = glue("{base_url}{file_name}"))
+    mutate(url = glue("{base_url}{file_name}?raw=true"))
   
   # Filter out the future dates that don't have files yet
   urls <- urls %>%
     filter(as.numeric(year) < to | (as.numeric(year) == to & as.numeric(month) <= month(Sys.Date())))
   
-  # Download and read CSV files
-  raw_surveys <- map(urls$url, ~ {
-    tryCatch({
-      read_csv_from_github(.x)
-    }, error = function(e) {
-      NULL
-    })
-  }) %>%
-    compact()  # Remove NULLs
+  # Download and read RDA files
+  raw_surveys <- suppressWarnings({
+    map(urls$url, ~ {
+      tryCatch({
+        read_rda_from_github(.x)
+      }, error = function(e) {
+        NULL
+      })
+    }) %>%
+      compact()  # Remove NULLs
+  })
   
   # Combine all data frames, automatically filling missing columns with NA
-  raw_surveys <- bind_rows(raw_surveys)
+  raw_surveys <- suppressWarnings(bind_rows(raw_surveys))
   
   # Ensure the date_elec and fieldwork_end columns are present
   if (!"date_elec" %in% names(raw_surveys)) {
@@ -101,9 +118,9 @@ get_survey_data <- function(from = 1982, to = 2023,
   # Convert date_elec and fieldwork_end to Date objects
   raw_surveys <- raw_surveys %>%
     mutate(
-      date_elec = dmy(date_elec),
-      fieldwork_end = dmy(fieldwork_end),
-      fieldwork_start = dmy(fieldwork_start),
+      date_elec = as.Date(date_elec),
+      fieldwork_end = as.Date(fieldwork_end),
+      fieldwork_start = as.Date(fieldwork_start),
       fieldwork_days = as.numeric(difftime(fieldwork_end, fieldwork_start, units = "days"))
     )
   
@@ -150,16 +167,22 @@ get_survey_data <- function(from = 1982, to = 2023,
       filter(days_to_elec <= max_days_to)
   }
   
-  # Select specific parties if select_parties is not "all"
-  if (select_parties != "all") {
-    select_columns <- c("polling_firm", "media", "date_elec", "fieldwork_start", "fieldwork_end", "sample_size", "turnout", select_parties)
+  # Apply filtering to exclude exit polls if include_exit_polls is FALSE
+  if (!include_exit_polls) {
     raw_surveys <- raw_surveys %>%
-      select(any_of(select_columns))
+      filter(!is_exit_poll)
   }
   
-  # Remove the days_to_elec and fieldwork_days columns after filtering
-  #raw_surveys <- raw_surveys %>%
-    #select(-days_to_elec, -fieldwork_days)
+  # Select specific parties if select_parties is not "all"
+  if (select_parties != "all") {
+    raw_surveys <- raw_surveys %>%
+      filter(party %in% select_parties)
+  }
+  
+  # Reorder columns to maintain the original dataset order
+  raw_surveys <- raw_surveys %>%
+    select(polling_firm, media, sample_size, turnout, fieldwork_start, fieldwork_end, 
+           date_elec, fieldwork_duration, is_exit_poll, party, vote_share)
   
   return(raw_surveys)
 }
