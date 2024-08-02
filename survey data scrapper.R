@@ -117,6 +117,7 @@ for (name in names(survey_html_list)) {
 
 
 # CLEAN TABLES ----
+# Function to clean and process the tables
 clean_table <- function(df, year, cod_elec, month, date_elec) {
   # Identify rows containing the word "elections"
   df <- df %>%
@@ -129,60 +130,74 @@ clean_table <- function(df, year, cod_elec, month, date_elec) {
   if (!is.na(first_election_row)) {
     df <- df %>% slice(1:(first_election_row - 1))
   }
-  
-  # Continue with the cleaning process
-  df_cleaned <- df %>%
-    janitor::clean_names() %>%
-    mutate(polling_firm = str_remove_all(polling_firm, "\\[.*?\\]")) %>%
-    mutate(
-      fieldwork_start = str_extract(field_work_date, "^\\d+\\s+\\w{3}"),
-      fieldwork_end = str_extract(field_work_date, "\\d+\\s+\\w{3}"),
-      fieldwork_start = dmy(paste(fieldwork_start, year)),
-      fieldwork_end = dmy(paste(fieldwork_end, year))
-    ) %>%
-    mutate(
-      fieldwork_start = if_else(is.na(fieldwork_start) & !is.na(fieldwork_end), 
-                                fieldwork_end - days(2), 
-                                fieldwork_start),
-      fieldwork_end = if_else(is.na(fieldwork_end), fieldwork_start, fieldwork_end)
-    ) %>%
-    mutate(
-      fieldwork_start = as.Date(fieldwork_start),
-      fieldwork_end = as.Date(fieldwork_end)
-    ) %>%
-    mutate(fieldwork_duration = as.numeric(fieldwork_end - fieldwork_start)) %>%
-    mutate(turnout = case_when(
-      str_detect(turnout, "–") ~ {
-        values <- str_split(turnout, "–", simplify = TRUE)
-        mean(as.numeric(values), na.rm = TRUE)
-      },
-      TRUE ~ as.numeric(str_replace_all(turnout, "[^0-9.]", ""))
-    )) %>%
-    mutate(sample_size = as.numeric(str_replace_all(sample_size, "[^0-9]", ""))) %>%
-    mutate(across(6:ncol(.), ~ {
-      numeric_value <- as.numeric(str_replace_all(., "[^0-9.]", ""))
-      numeric_value <- if_else(str_detect(., "\\?"), NA_real_, numeric_value)
-      truncated_value <- floor(numeric_value * 10) / 10
-      return(truncated_value)
-    })) %>%
-    # Extract media part from polling_firm
-    mutate(media = if_else(str_detect(polling_firm, "/"), 
-                           str_extract(polling_firm, "(?<=/).*"), 
-                           NA_character_)) %>%
-    mutate(polling_firm = str_remove(polling_firm, "/.*")) %>%  # Remove the media part from polling_firm
-    mutate(date_elec = as.Date(date_elec)) %>%
-    mutate(is_exit_poll = fieldwork_duration <= 1 & fieldwork_end == date_elec) %>%
-    relocate(fieldwork_start, fieldwork_end, fieldwork_duration, .after = polling_firm) %>%
-    relocate(date_elec, .after = fieldwork_duration) %>%
-    relocate(is_exit_poll, .after = date_elec) %>%
-    relocate(media, .after = polling_firm) %>%
-    select(-has_elections, -field_work_date, -cod_elec)  # Remove the helper column after its use
-  
-  return(df_cleaned)
-}
-
-
-
+  # Function to clean and process the tables
+  clean_table <- function(df, year, cod_elec, month, date_elec) {
+    # Identify rows containing the word "elections"
+    df <- df %>%
+      mutate(has_elections = apply(., 1, function(row) any(grepl("elections", row, ignore.case = TRUE))))
+    
+    # Find the first occurrence of "elections"
+    first_election_row <- which(df$has_elections)[1]
+    
+    # Slice the data frame up to the first occurrence of "elections"
+    if (!is.na(first_election_row)) {
+      df <- df %>% slice(1:(first_election_row - 1))
+    }
+    
+    # Continue with the cleaning process
+    df_cleaned <- df %>%
+      janitor::clean_names() %>%
+      mutate(turnout = case_when(
+        str_detect(turnout, "–") ~ {
+          values <- str_split(turnout, "–", simplify = TRUE)
+          mean(as.numeric(values), na.rm = TRUE)
+        },
+        TRUE ~ as.numeric(str_replace_all(turnout, "[^0-9.]", ""))
+      )) %>%
+      mutate(sample_size = as.numeric(str_replace_all(sample_size, "[^0-9]", ""))) %>%
+      mutate(across(5:ncol(.), ~ {
+        numeric_value <- as.numeric(str_replace_all(., "[^0-9.]", ""))
+        numeric_value <- if_else(str_detect(., "\\?"), NA_real_, numeric_value)
+        truncated_value <- floor(numeric_value * 10) / 10
+        return(truncated_value)
+      })) %>%
+      mutate(media = str_remove_all(str_extract(polling_firm, "(?<=/).*"), "\\[.*?\\]")) %>%  # Extract media from polling_firm
+      mutate(polling_firm = str_remove_all(str_remove(polling_firm, "/.*"), "\\[.*?\\]")) %>%  # Remove the media part from polling_firm
+      relocate(media, .after = polling_firm) %>%
+      mutate(
+        fieldwork_start = str_extract(field_work_date, "^\\d+\\s+\\w{3}"),
+        fieldwork_end = str_extract(field_work_date, "\\d+\\s+\\w{3}"),
+        fieldwork_start = dmy(paste(fieldwork_start, year)),
+        fieldwork_end = dmy(paste(fieldwork_end, year))
+      ) %>%
+      mutate(
+        fieldwork_start = if_else(is.na(fieldwork_start) & !is.na(fieldwork_end), 
+                                  fieldwork_end - days(2), 
+                                  fieldwork_start),
+        fieldwork_end = if_else(is.na(fieldwork_end), fieldwork_start, fieldwork_end)
+      ) %>%
+      mutate(
+        fieldwork_start = as.Date(fieldwork_start),
+        fieldwork_end = as.Date(fieldwork_end)
+      ) %>%
+      mutate(fieldwork_duration = as.numeric(fieldwork_end - fieldwork_start)) %>%
+      mutate(turnout = case_when(
+        str_detect(turnout, "–") ~ {
+          values <- str_split(turnout, "–", simplify = TRUE)
+          mean(as.numeric(values), na.rm = TRUE)
+        },
+        TRUE ~ as.numeric(str_replace_all(turnout, "[^0-9.]", ""))
+      )) %>%
+      mutate(is_exit_poll = fieldwork_duration <= 1 & fieldwork_end == date_elec) |> 
+      
+      select(-has_elections, -field_work_date) %>%  # Remove the helper column after its use
+      mutate(date_elec = date_elec) %>% 
+      relocate(date_elec, .after = fieldwork_end)  # Move the media column after polling_firm
+    # Add date_elec column
+    # select(-cod_elec)  # Remove the cod_elec column
+    
+    return(df_cleaned)
+  }
 
 
 # Extract and clean tables
@@ -242,10 +257,28 @@ names(cleaned_voting_intention_tables) <- names(raw_voting_intention_tables)
 #  message("No tables to save.")
 #}
 
+# Function to tidy the voting intention data
+tidy_survey_data <- function(df) {
+  # Identify the index positions of the relevant columns
+  turnout_col <- which(names(df) == "turnout")
+  fieldwork_start_col <- which(names(df) == "fieldwork_start")
+  
+  # Use pivot_longer to transform the data into a tidy format
+  df_tidy <- df %>%
+    pivot_longer(cols = (turnout_col + 1):(fieldwork_start_col - 1),
+                 names_to = "party",
+                 values_to = "vote_share") %>%
+    filter(!is.na(vote_share)) %>%  # Optionally, remove rows with NA vote_share
+    mutate(vote_share = as.numeric(str_replace_all(vote_share, "\\[.*?\\]", ""))) # Clean vote_share values
+  
+  return(df_tidy)
+}
 
+# Apply the function to each data frame in the cleaned_voting_intention_tables list
+tidy_cleaned_voting_intention_tables <- lapply(cleaned_voting_intention_tables, tidy_survey_data)
 
 # Ensure the cleaned tables list is not empty
-if (length(cleaned_voting_intention_tables) > 0) {
+if (length(tidy_cleaned_voting_intention_tables) > 0) {
   # Define the output directory
   output_directory <- "C:/Users/mklde/OneDrive/Documents/R stuff/Pollspain-data/survey data"
   
@@ -255,17 +288,20 @@ if (length(cleaned_voting_intention_tables) > 0) {
   }
   
   # Save cleaned tables to RDA files
-  for (name in names(cleaned_voting_intention_tables)) {
+  for (name in names(tidy_cleaned_voting_intention_tables)) {
     file_path <- file.path(output_directory, paste0(name, ".rda"))
     tryCatch({
       # Save the data frame to an RDA file with the object name being the same as the table name
-      assign(name, cleaned_voting_intention_tables[[name]])
+      assign(name, tidy_cleaned_voting_intention_tables[[name]])
       save(list = name, file = file_path)
       message("Saved file: ", file_path)
     }, error = function(e) {
       message("Failed to save file: ", file_path, " - ", e$message)
     })
   }
-} else {
-  message("No tables to save.")
+} else {message("No tables to save.")
 }
+
+
+
+
