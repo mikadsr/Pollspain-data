@@ -20,7 +20,7 @@ historical_survey_links_wikipedia <- dates_elections_spain %>%
       TRUE ~ glue("https://en.wikipedia.org/wiki/Opinion_polling_for_the_{year}_Spanish_general_election")
     )
   ) %>%
-  select(date_elec = date, year, type_elec, type_survey, links)
+  select(date_elec = date_elec, year, type_elec, type_survey, links)
 
 ##Create a list to store the HTML content----
 survey_html_list <- list()
@@ -150,7 +150,7 @@ clean_table <- function(df, year, cod_elec, month, date_elec) {
       fieldwork_start = as.Date(fieldwork_start),
       fieldwork_end = as.Date(fieldwork_end)
     ) %>%
-    relocate(fieldwork_start, fieldwork_end, .after = polling_firm) %>%
+    mutate(fieldwork_duration = as.numeric(fieldwork_end - fieldwork_start)) %>%
     mutate(turnout = case_when(
       str_detect(turnout, "–") ~ {
         values <- str_split(turnout, "–", simplify = TRUE)
@@ -165,16 +165,24 @@ clean_table <- function(df, year, cod_elec, month, date_elec) {
       truncated_value <- floor(numeric_value * 10) / 10
       return(truncated_value)
     })) %>%
-    mutate(media = str_extract(polling_firm, "(?<=/).*")) %>%  # Extract media from polling_firm
+    # Extract media part from polling_firm
+    mutate(media = if_else(str_detect(polling_firm, "/"), 
+                           str_extract(polling_firm, "(?<=/).*"), 
+                           NA_character_)) %>%
     mutate(polling_firm = str_remove(polling_firm, "/.*")) %>%  # Remove the media part from polling_firm
+    mutate(date_elec = as.Date(date_elec)) %>%
+    mutate(is_exit_poll = fieldwork_duration <= 1 & fieldwork_end == date_elec) %>%
+    relocate(fieldwork_start, fieldwork_end, fieldwork_duration, .after = polling_firm) %>%
+    relocate(date_elec, .after = fieldwork_duration) %>%
+    relocate(is_exit_poll, .after = date_elec) %>%
     relocate(media, .after = polling_firm) %>%
-    select(-has_elections, -field_work_date) %>%  # Remove the helper column after its use
-    mutate(date_elec = as.Date(date_elec)) %>% 
-    relocate(date_elec, .after = fieldwork_end) %>% # Move the media column after polling_firm
-    select(-cod_elec)  # Remove the cod_elec column
+    select(-has_elections, -field_work_date, -cod_elec)  # Remove the helper column after its use
   
   return(df_cleaned)
 }
+
+
+
 
 
 # Extract and clean tables
@@ -207,6 +215,7 @@ cleaned_voting_intention_tables <- lapply(names(raw_voting_intention_tables), fu
 
 
 names(cleaned_voting_intention_tables) <- names(raw_voting_intention_tables)
+
 
 
 # Ensure the cleaned tables list is not empty
