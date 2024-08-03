@@ -71,6 +71,17 @@ get_mun_census_data <- function(type_elec, year, month) {
   # Initialize an empty list to store the data
   combined_data_list <- list()
   
+  # Local helper function to read RDA file from GitHub
+  read_rda_from_github <- function(url) {
+    temp_file <- tempfile(fileext = ".rda")
+    GET(url, write_disk(temp_file, overwrite = TRUE))
+    temp_env <- new.env()
+    load(temp_file, envir = temp_env)
+    df_name <- ls(temp_env)
+    data <- get(df_name, envir = temp_env)
+    return(data)
+  }
+  
   # Loop through the vectors and fetch the data
   for (i in seq_along(type_elec_vec)) {
     type_elec <- type_elec_vec[i]
@@ -81,38 +92,35 @@ get_mun_census_data <- function(type_elec, year, month) {
     char_month <- sprintf("%02d", month)
     
     # Construct the URL for the specific election directory
-    base_url <- "https://raw.githubusercontent.com/mikadsr/Pollspain-data/main"
+    base_url <- "https://github.com/mikadsr/Pollspain-data/blob/main"
     election_info <- type_to_code_election(type_elec)
     election_dir <- glue("{base_url}/{election_info$dir}/{election_info$cod_elec}{year}{char_month}")
     
     # Construct the URL for the raw data file
-    file_url <- glue("{election_dir}/raw_mun_data_{type_elec}_{year}_{char_month}.csv")
+    file_url <- glue("{election_dir}/raw_mun_data_{type_elec}_{year}_{char_month}.rda?raw=true")
     
     # Print the file URL for debugging purposes
-    message("Fetching data from ","raw_mun_data_",(type_elec),"_",(year),"_",(char_month),".csv")
+    message("Fetching data from ", file_url)
     
     # Fetch the file
-    response <- GET(file_url)
-    if (status_code(response) != 200) {
-      message("Failed to fetch the data file for ", type_elec, " in ", year, "-", month)
-      next
-    }
-    
-    # Read the data
-    mun_data <- read_csv(content(response, "text"), show_col_types = FALSE)
-    
-    # Join MIR and INE information
-    mun_data <- mun_data %>%
-      left_join(cod_INE_mun, by = c("id_MIR_mun", "cod_MIR_ccaa", "cod_INE_prov", "cod_INE_mun"), suffix = c(".x", "")) %>%
-      select(-mun.x) %>%
-      relocate(cod_INE_ccaa, .before = cod_MIR_ccaa) %>%
-      relocate(id_INE_mun, .before = id_MIR_mun) %>%
-      relocate(cd_INE_mun, mun, .after = cod_INE_mun) %>%
-      relocate(ccaa, .after = cod_MIR_ccaa) %>%
-      relocate(prov, .after = cod_INE_prov)
-    
-    # Add the data to the list
-    combined_data_list[[i]] <- mun_data
+    tryCatch({
+      mun_data <- read_rda_from_github(file_url)
+      
+      # Join MIR and INE information
+      mun_data <- mun_data %>%
+        left_join(cod_INE_mun, by = c("id_MIR_mun", "cod_MIR_ccaa", "cod_INE_prov", "cod_INE_mun"), suffix = c(".x", "")) %>%
+        select(-mun.x) %>%
+        relocate(cod_INE_ccaa, .before = cod_MIR_ccaa) %>%
+        relocate(id_INE_mun, .before = id_MIR_mun) %>%
+        relocate(cd_INE_mun, mun, .after = cod_INE_mun) %>%
+        relocate(ccaa, .after = cod_MIR_ccaa) %>%
+        relocate(prov, .after = cod_INE_prov)
+      
+      # Add the data to the list
+      combined_data_list[[i]] <- mun_data
+    }, error = function(e) {
+      message("Failed to fetch the data file for ", type_elec, " in ", year, "-", char_month, ": ", e$message)
+    })
   }
   
   # Combine all data frames into one
@@ -120,6 +128,7 @@ get_mun_census_data <- function(type_elec, year, month) {
   
   return(combined_mun_census_data)
 }
+
 
 #' @title Get Poll Station Data
 #'
@@ -189,6 +198,17 @@ get_poll_station_data <- function(type_elec, year, month, prec_round = 3) {
   # Initialize an empty list to store the data
   combined_data_list <- list()
   
+  # Local helper function to read RDA file from GitHub
+  read_rda_from_github <- function(url) {
+    temp_file <- tempfile(fileext = ".rda")
+    GET(url, write_disk(temp_file, overwrite = TRUE))
+    temp_env <- new.env()
+    load(temp_file, envir = temp_env)
+    df_name <- ls(temp_env)
+    data <- get(df_name, envir = temp_env)
+    return(data)
+  }
+  
   # Loop through the vectors and fetch the data
   for (i in seq_along(type_elec)) {
     # Ensure the month is two digits
@@ -198,77 +218,74 @@ get_poll_station_data <- function(type_elec, year, month, prec_round = 3) {
     election_info <- type_to_code_election(type_elec[i])
     
     # Base URL for data
-    base_url <- "https://raw.githubusercontent.com/mikadsr/Pollspain-data/main"
+    base_url <- "https://github.com/mikadsr/Pollspain-data/blob/main"
     
     # Construct the URL for the specific election directory
     election_dir <- glue("{base_url}/{election_info$dir}/{election_info$cod_elec}{year[i]}{char_month}")
     message("Fetching from URL: ", election_dir)
     
     # Construct the URL for the specific file
-    data_url <- glue("{election_dir}/raw_poll_stations_{type_elec[i]}_{year[i]}_{char_month}.csv")
+    data_url <- glue("{election_dir}/raw_poll_stations_{type_elec[i]}_{year[i]}_{char_month}.rda?raw=true")
     message("Fetching data from ", data_url)
     
     # Fetch the data
-    response <- GET(data_url)
-    if (status_code(response) != 200) {
-      message(glue("No data found for election {type_elec[i]} in {char_month}-{year[i]}"))
-      next
-    }
-    
-    # Read the data
-    poll_station_data <- read_csv(content(response, "text"), show_col_types = FALSE)
-    
-    # Process the data
-    poll_station_data <- poll_station_data %>%
-      mutate(valid_ballots = blank_ballots + party_ballots,
-             total_ballots = valid_ballots + invalid_ballots) %>%
-      filter(cod_INE_mun != "999") %>%
-      left_join(get_mun_census_data(type_elec[i], year[i], month[i]),
-                by = c("cod_elec", "type_elec", "date_elec", "id_MIR_mun"),
-                suffix = c("", ".y")) %>%
-      select(-contains(".y")) %>%
-      relocate(id_INE_mun, .before = id_MIR_mun) %>%
-      relocate(cod_INE_ccaa, .before = cod_MIR_ccaa) %>%
-      relocate(ccaa, .after = cod_MIR_ccaa) %>%
-      relocate(prov, .after = cod_INE_prov) %>%
-      relocate(cd_INE_mun, mun, .after = cod_INE_mun) %>%
-      select(-c(census_counting_mun, census_CERE_mun, census_INE_mun)) %>%
-      bind_rows(poll_station_data %>% filter(cod_INE_mun == "999")) %>%
-      left_join(cod_INE_mun %>%
-                  distinct(cod_MIR_ccaa, cod_INE_prov, .keep_all = TRUE) %>%
-                  select(contains("ccaa") | contains("prov")),
-                by = c("cod_MIR_ccaa", "cod_INE_prov"),
-                suffix = c("", ".y")) %>%
-      mutate(cod_INE_ccaa = ifelse(is.na(cod_INE_ccaa), cod_INE_ccaa.y, cod_INE_ccaa),
-             ccaa = ifelse(is.na(ccaa), ccaa.y, ccaa),
-             prov = ifelse(is.na(prov), prov.y, prov),
-             mun = ifelse(cod_INE_mun == "999", "CERA", mun),
-             id_INE_mun = glue("{cod_INE_ccaa}-{cod_INE_prov}-{cod_INE_mun}"),
-             pop_res_mun = ifelse(cod_INE_mun == "999", census_INE, pop_res_mun)) %>%
-      select(-contains(".y"), -cod_MIR_ccaa) %>%
-      drop_na(id_INE_mun) %>%
-      mutate(id_INE_poll_station = glue("{id_INE_mun}-{cod_mun_district}-{cod_sec}-{cod_poll_station}"),
-             turnout_1 = round(100 * ballots_1 / census_counting, prec_round),
-             turnout_2 = round(100 * ballots_2 / census_counting, prec_round),
-             turnout = round(100 * total_ballots / census_counting, prec_round),
-             turnout_abs = 100 - turnout,
-             porc_valid = round(100 * valid_ballots / total_ballots, prec_round),
-             porc_invalid = round(100 * invalid_ballots / total_ballots, prec_round),
-             porc_parties = round(100 * party_ballots / valid_ballots, prec_round),
-             porc_blank = round(100 * blank_ballots / valid_ballots, prec_round)) %>%
-      relocate(turnout:porc_blank, .after = total_ballots) %>%
-      relocate(id_INE_poll_station, .after = date_elec) %>%
-      relocate(turnout_1, .after = ballots_1) %>%
-      relocate(turnout_2, .after = ballots_2) %>%
-      mutate(id_elec = glue("{election_info$cod_elec}-{date_elec}")) %>%
-      select(id_elec, type_elec, date_elec, id_INE_poll_station, ccaa, prov, mun,
-             census_counting, ballots_1, turnout_1, ballots_2, turnout_2,
-             blank_ballots, invalid_ballots, party_ballots, valid_ballots,
-             total_ballots, turnout, porc_valid, porc_invalid,
-             porc_parties, porc_blank, pop_res_mun)
-    
-    # Add the processed data to the list
-    combined_data_list[[i]] <- poll_station_data
+    tryCatch({
+      poll_station_data <- read_rda_from_github(data_url)
+      
+      # Process the data
+      poll_station_data <- poll_station_data %>%
+        mutate(valid_ballots = blank_ballots + party_ballots,
+               total_ballots = valid_ballots + invalid_ballots) %>%
+        filter(cod_INE_mun != "999") %>%
+        left_join(get_mun_census_data(type_elec[i], year[i], month[i]),
+                  by = c("cod_elec", "type_elec", "date_elec", "id_MIR_mun"),
+                  suffix = c("", ".y")) %>%
+        select(-contains(".y")) %>%
+        relocate(id_INE_mun, .before = id_MIR_mun) %>%
+        relocate(cod_INE_ccaa, .before = cod_MIR_ccaa) %>%
+        relocate(ccaa, .after = cod_MIR_ccaa) %>%
+        relocate(prov, .after = cod_INE_prov) %>%
+        relocate(cd_INE_mun, mun, .after = cod_INE_mun) %>%
+        select(-c(census_counting_mun, census_CERE_mun, census_INE_mun)) %>%
+        bind_rows(poll_station_data %>% filter(cod_INE_mun == "999")) %>%
+        left_join(cod_INE_mun %>%
+                    distinct(cod_MIR_ccaa, cod_INE_prov, .keep_all = TRUE) %>%
+                    select(contains("ccaa") | contains("prov")),
+                  by = c("cod_MIR_ccaa", "cod_INE_prov"),
+                  suffix = c("", ".y")) %>%
+        mutate(cod_INE_ccaa = ifelse(is.na(cod_INE_ccaa), cod_INE_ccaa.y, cod_INE_ccaa),
+               ccaa = ifelse(is.na(ccaa), ccaa.y, ccaa),
+               prov = ifelse(is.na(prov), prov.y, prov),
+               mun = ifelse(cod_INE_mun == "999", "CERA", mun),
+               id_INE_mun = glue("{cod_INE_ccaa}-{cod_INE_prov}-{cod_INE_mun}"),
+               pop_res_mun = ifelse(cod_INE_mun == "999", census_INE, pop_res_mun)) %>%
+        select(-contains(".y"), -cod_MIR_ccaa) %>%
+        filter(!is.na(id_INE_mun)) %>%
+        mutate(id_INE_poll_station = glue("{id_INE_mun}-{cod_mun_district}-{cod_sec}-{cod_poll_station}"),
+               turnout_1 = round(100 * ballots_1 / census_counting, prec_round),
+               turnout_2 = round(100 * ballots_2 / census_counting, prec_round),
+               turnout = round(100 * total_ballots / census_counting, prec_round),
+               turnout_abs = 100 - turnout,
+               porc_valid = round(100 * valid_ballots / total_ballots, prec_round),
+               porc_invalid = round(100 * invalid_ballots / total_ballots, prec_round),
+               porc_parties = round(100 * party_ballots / valid_ballots, prec_round),
+               porc_blank = round(100 * blank_ballots / valid_ballots, prec_round)) %>%
+        relocate(turnout:porc_blank, .after = total_ballots) %>%
+        relocate(id_INE_poll_station, .after = date_elec) %>%
+        relocate(turnout_1, .after = ballots_1) %>%
+        relocate(turnout_2, .after = ballots_2) %>%
+        mutate(id_elec = glue("{election_info$cod_elec}-{date_elec}")) %>%
+        select(id_elec, type_elec, date_elec, id_INE_poll_station, ccaa, prov, mun,
+               census_counting, ballots_1, turnout_1, ballots_2, turnout_2,
+               blank_ballots, invalid_ballots, party_ballots, valid_ballots,
+               total_ballots, turnout, porc_valid, porc_invalid,
+               porc_parties, porc_blank, pop_res_mun)
+      
+      # Add the processed data to the list
+      combined_data_list[[i]] <- poll_station_data
+    }, error = function(e) {
+      message(glue("No data found for election {type_elec[i]} in {char_month}-{year[i]}: {e$message}"))
+    })
   }
   
   # Combine all data frames into one
@@ -402,27 +419,33 @@ get_candidacies_data <- function(type_elec, year, month, include_candidates = FA
   # Loop through each set of parameters
   for (i in seq_along(type_elec)) {
     # Validate election type
-    if (!type_elec[i] %in% c("referendum", "congress", "senate", "local", "regional", "cabildo", "EU")) {
-      stop("Invalid election type. Allowed types are: 'referendum', 'congress', 'senate', 'local', 'regional', 'cabildo', 'EU'")
+    if (!type_elec[i] %in% c("congress", "senate")) {
+      stop("Invalid election type. Allowed types are: 'congress', 'senate'")
     }
     
     # Get election info from the utils.R script
     election_info <- type_to_code_election(type_elec[i])
     
     # Construct the base URL and directory URL
-    base_url <- "https://raw.githubusercontent.com/mikadsr/Pollspain-data/main"
+    base_url <- "https://github.com/mikadsr/Pollspain-data/blob/main"
     election_dir <- glue("{base_url}/{election_info$dir}/{election_info$cod_elec}{year[i]}{sprintf('%02d', month[i])}")
     
     # Print the final URL for debugging
     message("Fetching from URL: ", election_dir)
     
     # Fetch the candidacies data
-    data_url <- glue("{election_dir}/raw_candidacies_{type_elec[i]}_{year[i]}_{sprintf('%02d', month[i])}.csv")
+    data_url <- glue("{election_dir}/raw_candidacies_{type_elec[i]}_{year[i]}_{sprintf('%02d', month[i])}.rda?raw=true")
     message("Fetching data from ", basename(data_url))
     
     # Collect raw data
     candidacies_files <- tryCatch({
-      read_csv(data_url, show_col_types = FALSE)
+      temp_file <- tempfile(fileext = ".rda")
+      GET(data_url, write_disk(temp_file, overwrite = TRUE))
+      temp_env <- new.env()
+      load(temp_file, envir = temp_env)
+      df_name <- ls(temp_env)
+      data <- get(df_name, envir = temp_env)
+      data
     }, error = function(e) {
       message(glue("No data found for election {type_elec[i]} in {sprintf('%02d', month[i])}-{year[i]}"))
       return(NULL)
@@ -432,7 +455,24 @@ get_candidacies_data <- function(type_elec, year, month, include_candidates = FA
     
     # Include candidates if requested
     if (include_candidates) {
-      candidates_files <- get_candidates_data(type_elec[i], year[i], month[i])
+      # Fetch the candidates data
+      candidates_url <- glue("{election_dir}/raw_candidacies_poll_{type_elec[i]}_{year[i]}_{sprintf('%02d', month[i])}.rda?raw=true")
+      message("Fetching candidates data from ", basename(candidates_url))
+      
+      candidates_files <- tryCatch({
+        temp_file <- tempfile(fileext = ".rda")
+        GET(candidates_url, write_disk(temp_file, overwrite = TRUE))
+        temp_env <- new.env()
+        load(temp_file, envir = temp_env)
+        df_name <- ls(temp_env)
+        data <- get(df_name, envir = temp_env)
+        data
+      }, error = function(e) {
+        message(glue("No candidates data found for election {type_elec[i]} in {sprintf('%02d', month[i])}-{year[i]}"))
+        return(NULL)
+      })
+      
+      if (is.null(candidates_files)) next
       
       # Join candidacies and candidates data, keeping only the x variables in case of duplication
       candidacies_data <- candidacies_files %>%
