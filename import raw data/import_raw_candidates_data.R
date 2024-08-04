@@ -66,13 +66,13 @@ import_raw_candidates_file <- function(type_elec, year, month,
     starts <- starts_after_2004
     ends <- ends_after_2004
     col_names <- c("election_type", "year", "month", "round_number", "province_code", "district_code", 
-                   "municipality_code", "candidacy_code", "order_number", "candidate_type", "candidate_name",
+                   "municipality_code", "id_candidacies", "order_number", "candidate_type", "candidate_name",
                    "candidate_surname1", "candidate_surname2", "candidate_sex", "candidate_id_card", "candidate_elected")
   } else {
     starts <- starts_before_2004
     ends <- ends_before_2004
     col_names <- c("election_type", "year", "month", "round_number", "province_code", "district_code", 
-                   "municipality_code", "candidacy_code", "order_number", "candidate_type", "candidate_full_name")
+                   "municipality_code", "id_candidacies", "order_number", "candidate_type", "candidate_full_name")
   }
   
   # Read the fixed-width file
