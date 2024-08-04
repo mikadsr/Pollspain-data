@@ -468,7 +468,7 @@ get_candidacies_data <- function(type_elec, year, month, include_candidates = FA
     # Include candidates if requested
     if (include_candidates) {
       # Fetch the candidates data
-      candidates_url <- glue("{election_dir}/raw_candidacies_poll_{type_elec[i]}_{year[i]}_{sprintf('%02d', month[i])}.rda?raw=true")
+      candidates_url <- glue("{election_dir}/raw_candidates_{type_elec[i]}_{year[i]}_{sprintf('%02d', month[i])}.rda?raw=true")
       message("Fetching candidates data from ", basename(candidates_url))
       
       candidates_files <- tryCatch({
@@ -490,9 +490,12 @@ get_candidacies_data <- function(type_elec, year, month, include_candidates = FA
       candidacies_data <- candidacies_files %>%
         left_join(candidates_files, by = "id_candidacies", suffix = c("", ".y")) %>%
         select(-ends_with(".y")) %>%
-        rename(candidate_name = name, candidate_surname = surname,
-               candidate_order = order, candidate_holder = holder,
-               candidate_sex = sex, candidate_elected = elected)
+        rename(candidate_full_name = candidate_full_name,
+               candidate_order = order_number,
+               candidate_type = candidate_type,
+               candidate_sex = candidate_sex,
+               candidate_elected = candidate_elected,
+               candidate_id_card = candidate_id_card)
       
     } else {
       candidacies_data <- candidacies_files
@@ -507,7 +510,6 @@ get_candidacies_data <- function(type_elec, year, month, include_candidates = FA
   
   return(combined_candidacies_data)
 }
-
 
 
 #' @title Get CERA data (at poll station level)
