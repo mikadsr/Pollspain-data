@@ -324,50 +324,62 @@ get_poll_station_data <- function(type_elec, year, month, prec_round = 3) {
 #' }
 #'
 #' @export
+# Function to read and import .rda files instead of .csv files
+# Function to read and import .rda files instead of .csv files
+# Function to read and import .rda files instead of .csv files
 get_candidates_data <- function(type_elec, year, month) {
   # At this time, just congress election
   if (type_elec != "congress") {
     stop("Development in process: at this time, just congress elections are allowed")
   }
   
-  # Check: if elections required are allowed
-  elections_allowed <- dates_elections_spain |>
-    filter(year >= 1986) |>
+  # Check if elections required are allowed
+  elections_allowed <- dates_elections_spain %>%
+    filter(year >= 1986) %>%
     inner_join(tibble(cod_elec = type_to_code_election(type_elec)$cod_elec,
                       type_elec, year, month),
                by = c("cod_elec", "type_elec", "year", "month"))
-  join_result <- elections_allowed |> nrow()
+  join_result <- elections_allowed %>% nrow()
   if (join_result == 0) {
     stop("No elections on provided dates are available")
   }
   
   # Construct the URL for the data file
   election_info <- type_to_code_election(type_elec)
-  base_url <- "https://raw.githubusercontent.com/mikadsr/Pollspain-data/main"
-  file_url <- glue("{base_url}/{election_info$dir}/{election_info$cod_elec}{year}{sprintf('%02d', month)}/raw_candidates_{type_elec}_{year}_{sprintf('%02d', month)}.csv")
+  base_url <- "https://github.com/mikadsr/Pollspain-data/blob/main"
+  file_url <- glue("{base_url}/{election_info$dir}/{election_info$cod_elec}{year}{sprintf('%02d', month)}/raw_candidates_{type_elec}_{year}_{sprintf('%02d', month)}.rda?raw=true")
   
   # Print the URL for debugging purposes
   message("Fetching data from URL: ", file_url)
   
-  # Fetch the data
+  # Fetch and load the .rda file
   candidates_data <- tryCatch({
-    read_csv(file_url, show_col_types = FALSE)
+    temp_file <- tempfile(fileext = ".rda")
+    GET(file_url, write_disk(temp_file, overwrite = TRUE))
+    temp_env <- new.env()
+    load(temp_file, envir = temp_env)
+    df_name <- ls(temp_env)
+    data <- get(df_name, envir = temp_env)
+    data
   }, error = function(e) {
     stop("Failed to fetch or read candidates data from the specified URL.")
   })
   
-  # Filter and process candidates data
-  candidates_data <- candidates_data |>
-    filter(type_elec %in% type_elec & 
-             year(date_elec) %in% year & 
-             month(date_elec) %in% month) |>
-    mutate(cod_mun_district = ifelse(cod_mun_district == "9", NA, cod_mun_district),
-           cod_INE_mun = ifelse(cod_INE_mun == "999", NA, cod_INE_mun))
+  # Debug: Check the structure of the loaded data
+  print("Structure of loaded data:")
+  str(candidates_data)
+  
+  # Convert date_elec to Date format (YYYY-MM-DD)
+  candidates_data <- candidates_data %>%
+    mutate(date_elec = ymd(date_elec))   # Ensure date_elec is in Date format
+  
+  # Debug: Check the structure of the processed data
+  print("Structure of processed data:")
+  str(candidates_data)
   
   # Output
   return(candidates_data)
 }
-
 
 
 ##' @title Get candidacies data

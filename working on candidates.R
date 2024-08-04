@@ -6,6 +6,8 @@ library(stringr)
 library(readr)
 library(dplyr)
 
+# FOR CANDIDATE FILES AFTER, AND INCLUDING 2004 ----
+
 # File URL
 file_url <- "https://github.com/mikadsr/Pollspain-data/blob/main/02-congress/02201904/04021904.DAT?raw=true"
 

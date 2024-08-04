@@ -72,10 +72,12 @@ import_raw_candidacies_file <- function(type_elec, year, month,
     # Rename and relocate, ensuring "date_elec" does not already exist
     if ("date_elec" %in% names(candidacies)) {
       candidacies <- candidacies |>
+        mutate(date_elec = as.Date(date_elec)) |>
         relocate(date_elec, .after = type_elec)
     } else {
       candidacies <- candidacies |>
         rename(date_elec = date) |>
+        mutate(date_elec = as.Date(date_elec)) |>
         relocate(date_elec, .after = type_elec)
     }
     
@@ -87,7 +89,6 @@ import_raw_candidacies_file <- function(type_elec, year, month,
   
   return(result)
 }
-
 # Function to import all candidacies
 import_all_candidacies <- function(elections) {
   elections %>%
@@ -136,29 +137,36 @@ historical_raw_candidacies <- bind_rows(historical_raw_candidacies_congress,
 #    })
 #  })
 #
-library(tidyverse)
-library(glue)
+
 
 # ----- save_rda -----
+# Save RDA files function
+# Save RDA files function
 historical_raw_candidacies %>%
-  split(historical_raw_candidacies$type_elec) %>%
-  map(function(x) { split(x, x$date_elec) }) %>%
-  map(function(y) { 
-    map(y, function(x) {
-      election_info <- type_to_code_election(unique(x$type_elec))
-      date_elec <- unique(x$date_elec)
-      year <- substr(date_elec, 7, 10)  # Extract year (last 4 characters)
-      month <- substr(date_elec, 4, 5)  # Extract month (characters 4 and 5)
+  split(.$type_elec) %>%
+  map(function(x) {
+    split(x, x$date_elec)
+  }) %>%
+  map(function(y) {
+    map(y, function(z) {
+      # Debug: print the structure of z
+      print("Structure of z:")
+      str(z)
+      
+      election_info <- type_to_code_election(unique(z$type_elec))
+      date_elec <- unique(z$date_elec)
+      year <- year(date_elec)  # Extract year using lubridate
+      month <- month(date_elec)  # Extract month using lubridate
+      month <- sprintf("%02d", month)  # Ensure month is two digits
       output_dir <- glue("C:/Users/mklde/OneDrive/Documents/R stuff/Pollspain-data/{election_info$dir}/{election_info$cod_elec}{year}{month}")
       
       # Create directory if it doesn't exist
       dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
       
       # Save the data frame as .rda file
-      save(x, file = glue("{output_dir}/raw_candidacies_{unique(x$type_elec)}_{year}_{month}.rda"))
+      save(z, file = glue("{output_dir}/raw_candidacies_{unique(z$type_elec)}_{year}_{month}.rda"))
     })
   })
-
 
 # ----- rm -----
 rm(senate_elec, congress_elec, historical_raw_candidacies, historical_raw_candidacies_congress, historical_raw_candidacies_senate)
