@@ -82,13 +82,14 @@ import_raw_candidacies_poll_file <- function(type_elec, year, month,
                 by = c("cod_elec", "type_elec", "year", "month")) %>%
       select(-year, -month, -day)
     
-    # Rename and relocate
+    # Rename and relocate, ensuring "date_elec" is in yyyy-mm-dd format
     poll_stations <- poll_stations %>%
+      mutate(date_elec = as.Date(date_elec)) %>%
       relocate(date_elec, .after = type_elec) %>%
       relocate(id_MIR_mun, .after = date_elec) %>%
       relocate(turn, .after = cod_poll_station)
     
-    # output
+    # Output
     return(poll_stations)
   }
 }
@@ -153,8 +154,11 @@ historical_raw_candidacies_poll %>%
     map(y, function(x) {
       election_info <- type_to_code_election(unique(x$type_elec))
       date_elec <- unique(x$date_elec)
-      year <- substr(date_elec, 7, 10)  # Extract year (last 4 characters)
-      month <- substr(date_elec, 4, 5)  # Extract month (characters 4 and 5)
+      year <- substr(as.character(date_elec), 1, 4)  # Extract year (first 4 characters)
+      month <- sprintf("%02d", as.numeric(substr(as.character(date_elec), 6, 7)))  # Extract month (characters 6 and 7)
+      day <- sprintf("%02d", as.numeric(substr(as.character(date_elec), 9, 10)))  # Extract day (characters 9 and 10)
+      
+      # Construct the directory path using the correct format
       output_dir <- glue("C:/Users/mklde/OneDrive/Documents/R stuff/Pollspain-data/{election_info$dir}/{election_info$cod_elec}{year}{month}")
       
       # Create directory if it doesn't exist
@@ -167,6 +171,7 @@ historical_raw_candidacies_poll %>%
       save(x, file = output_file)
     })
   })
+
 
 # ----- delete -----
 rm(list = c("historical_candidacies_poll_congress",
