@@ -1,11 +1,17 @@
+library(readr)
+library(dplyr)
+library(glue)
+library(httr)
+
 # Function to import raw candidates files from MIR
 import_raw_candidates_file <- function(type_elec, year, month,
                                        base_url = "https://github.com/mikadsr/Pollspain-data/raw/main/",
                                        encoding = "Latin1",
-                                       starts = c(1, 3, 7, 9, 10, 12, 13, 16, 22, 25, 26,
-                                                  51, 76, 101, 102, 104, 106, 110, 120),
-                                       ends = c(2, 6, 8, 9, 11, 12, 15, 21, 24, 25, 50,
-                                                75, 100, 101, 103, 105, 109, 119, 120)) {
+                                       starts_before_2004 = c(1, 3, 7, 9, 10, 12, 13, 16, 22, 25, 26),
+                                       ends_before_2004 = c(2, 6, 8, 9, 11, 12, 15, 21, 24, 25, 120),
+                                       starts_after_2004 = c(1, 3, 7, 9, 10, 12, 13, 16, 22, 25, 26, 51, 76, 101, 110, 120),
+                                       ends_after_2004 = c(2, 6, 8, 9, 11, 12, 15, 21, 24, 25, 50, 75, 100, 109, 119, 120)) {
+  
   # Ensure type_elec is scalar
   type_elec <- as.character(type_elec)
   
@@ -15,9 +21,9 @@ import_raw_candidates_file <- function(type_elec, year, month,
   
   # Check: if elections required are allowed
   char_month <- str_pad(month, pad = "0", width = 2)
-  join_result <- dates_elections_spain |>
+  join_result <- dates_elections_spain %>%
     inner_join(tibble(cod_elec = cod_elec, type_elec = type_elec, year = year, month = month),
-               by = c("cod_elec", "type_elec", "year", "month")) |>
+               by = c("cod_elec", "type_elec", "year", "month")) %>%
     nrow()
   if (join_result == 0) {
     stop(glue("No {type_elec} elections are available in {char_month}-{year}"))
@@ -26,11 +32,6 @@ import_raw_candidates_file <- function(type_elec, year, month,
   # Check: if base_url and encoding are valid
   if (!is.character(base_url) | !is.character(encoding)) {
     stop("Parameters 'base_url' and 'encoding' must be character")
-  }
-  
-  # Check: if lengths of starts and ends are equal
-  if (length(starts) != length(ends)) {
-    stop("Length of vectors 'starts' and 'ends' must be equal")
   }
   
   # Build the url to the directory
@@ -60,51 +61,90 @@ import_raw_candidates_file <- function(type_elec, year, month,
   
   raw_file <- tibble(value = raw_file)
   
-  # Process variables following the instructions of register
-  candidates <- raw_file |>
-    mutate(cod_elec = str_sub(value, start = starts[1], end = ends[1]),
-           type_elec = type_elec,
-           year = as.numeric(str_sub(value, starts[2], end = ends[2])),
-           month = as.numeric(str_sub(value, start = starts[3], end = ends[3])),
-           turn = as.numeric(str_sub(value, start = starts[4], end = ends[4])),
-           cod_INE_prov = str_sub(value, start = starts[5], end = ends[5]),
-           cod_mun_district = str_sub(value, start = starts[6], end = ends[6]),
-           cod_INE_mun = str_sub(value, start = starts[7], end = ends[7]),
-           id_candidacies = str_sub(value, start = starts[8], end = ends[8]),
-           order = as.numeric(str_sub(value, start = starts[9], end = ends[9])),
-           holder = str_sub(value, start = starts[10], end = ends[10]) == "T",
-           name = str_trim(str_sub(value, start = starts[11], end = ends[11])),
-           surname1 = str_trim(str_sub(value, start = starts[12], end = ends[12])),
-           surname2 = str_trim(str_sub(value, start = starts[13], end = ends[13])),
-           surname = str_trim(glue("{surname1} {surname2}")),
-           sex = str_sub(value, start = starts[14], end = ends[14]),
-           birth_day = str_sub(value, start = starts[15], end = ends[15]),
-           birth_month = as.numeric(str_sub(value, start = starts[16], end = ends[16])),
-           birth_year = as.numeric(str_sub(value, start = starts[17], end = ends[17])),
-           birthdate = suppressWarnings(as_date(glue("{birth_year}-{birth_month}-{birth_day}"))),
-           id_card = str_sub(value, start = starts[18], end = ends[18]),
-           elected = str_sub(value, start = starts[19], end = ends[19]) == "S") |>
-    select(-value, -surname1, -surname2, -contains("birth_")) |>
-    select(where(~ !all(is.na(.))))
+  # Determine which starts and ends to use
+  if (year >= 2004) {
+    starts <- starts_after_2004
+    ends <- ends_after_2004
+    col_names <- c("election_type", "year", "month", "round_number", "province_code", "district_code", 
+                   "municipality_code", "candidacy_code", "order_number", "candidate_type", "candidate_name",
+                   "candidate_surname1", "candidate_surname2", "candidate_sex", "candidate_id_card", "candidate_elected")
+  } else {
+    starts <- starts_before_2004
+    ends <- ends_before_2004
+    col_names <- c("election_type", "year", "month", "round_number", "province_code", "district_code", 
+                   "municipality_code", "candidacy_code", "order_number", "candidate_type", "candidate_full_name")
+  }
+  
+  # Read the fixed-width file
+  data <- read_fwf(url, fwf_positions(starts, ends, col_names), col_types = cols(.default = "c"))
+  
+  # Debug: Check the structure of the data
+  print("Structure of data after reading the .DAT file:")
+  str(data)
+  
+  # Data cleaning steps
+  if (year >= 2004) {
+    cleaned_data <- data %>%
+      mutate(
+        candidate_sex = case_when(
+          str_detect(candidate_sex, "F") ~ "female",
+          str_detect(candidate_sex, "M") ~ "male",
+          TRUE ~ candidate_sex
+        ),
+        candidate_elected = case_when(
+          str_detect(candidate_elected, "N") ~ FALSE,
+          str_detect(candidate_elected, "S") ~ TRUE,
+          TRUE ~ NA
+        ),
+        candidate_full_name = paste(candidate_name, candidate_surname1, candidate_surname2)
+      ) %>% 
+      select(-c(candidate_name, candidate_surname1, candidate_surname2))
+  } else {
+    cleaned_data <- data %>%
+      # Split remaining_data into two parts: before and after the first 0
+      mutate(
+        remaining_data_split = str_split_fixed(candidate_full_name, "0", 2),
+        candidate_full_name = remaining_data_split[, 1],
+        remaining_data_part2 = paste0("0", remaining_data_split[, 2])
+      ) %>%
+      # Apply case_when logic to the second part
+      mutate(
+        candidate_elected = case_when(
+          str_detect(remaining_data_part2, "N") ~ FALSE,
+          str_detect(remaining_data_part2, "S") ~ TRUE,
+          TRUE ~ NA
+        ),
+        candidate_sex = NA_character_,
+        candidate_id_card = NA_character_
+      ) %>%
+      # Remove the temporary columns used for splitting
+      select(-remaining_data_split, -remaining_data_part2)
+  }
+  
+  # Debug: Check the structure of the cleaned data
+  print("Structure of cleaned data:")
+  str(cleaned_data)
+  
+  # Ensure 'cod_elec' and 'type_elec' columns are present in cleaned_data
+  cleaned_data <- cleaned_data %>%
+    mutate(cod_elec = cod_elec, type_elec = type_elec, year = as.numeric(year), month = as.numeric(month))
   
   # Join with dates of elections
-  candidates <- candidates |>
-    left_join(dates_elections_spain |> select(-topic),
-              by = c("cod_elec", "type_elec", "year", "month")) |>
+  candidates <- cleaned_data %>%
+    left_join(dates_elections_spain %>% select(-topic),
+              by = c("cod_elec", "type_elec", "year", "month")) %>%
     select(-year, -month, -day)
   
   # Remove existing date_elec if present before renaming
   if ("date_elec" %in% names(candidates)) {
-    candidates <- candidates |>
-      select(-date_elec)
+    candidates <- candidates 
   }
   
-  # Rename and relocate
-  candidates <- candidates |>
-    rename(date_elec = date) |>
+  # relocate
+  candidates <- candidates %>%
     relocate(date_elec, .after = type_elec)
   
-  # output
+  # Output
   return(candidates)
 }
 
