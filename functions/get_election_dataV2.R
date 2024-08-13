@@ -597,190 +597,208 @@ get_CERA_data <- function(election_data, id_col = "id_INE_poll_station",
   return(data_cera)
 }
 
-#' @title aggregate_election_data 
+#' @title Get Candidacy Ballot Data
 #'
-#' @description This function aggregates election data at various hierarchical levels, including CERA (Census of Absent Residents) data.
+#' This function fetches and combines data on ballots cast for each candidacy in a specified election. 
+#' It optionally includes the names of the candidacies. The data is retrieved from a specified GitHub 
+#' repository containing Spanish election data.
 #'
-#' @inheritParams get_mun_census_data
-#' @param election_data A data frame containing the election data to be processed.
-#' @param level The hierarchical level for data aggregation. Can be one of \code{"all"}, \code{"ccaa"}, \code{"prov"}, \code{"mun"}, \code{"mun_district"}, \code{"sec"}, or \code{"poll_station"}. Defaults to \code{"all"}.
-#' @param id_col The name of the column containing the poll station ID. Defaults to \code{"id_INE_poll_station"}.
-#' @param cod_CERA The code representing CERA. Defaults to \code{"999"}.
-#' @param prec_round The precision for rounding percentages. Defaults to \code{3}.
+#' @param type_elec Character vector. Specifies the type of election, either "congress" or "senate".
+#' @param year Integer vector. Specifies the year(s) of the election(s).
+#' @param month Integer vector. Specifies the month(s) of the election(s). The month should be in two digits (e.g., 03 for March).
+#' @param include_candidacy_names Logical. If TRUE, the function will include the names of the candidacies by fetching additional data. 
+#'                                Default is TRUE.
 #'
-#' @return A data frame with the aggregated election data, including columns for type of election, election date, census data, total ballots, turnout percentages, and resident population.
+#' @return A tibble containing the combined ballot data and, if requested, the names of the candidacies.
+#'         The tibble includes the following columns (depending on the availability of data):
+#'         - `cod_elec`: Election code
+#'         - `type_elec`: Type of election
+#'         - `date_elec`: Date of the election
+#'         - `id_MIR_mun`: Unique ID for the municipality
+#'         - `cod_MIR_ccaa`: Autonomous community code
+#'         - `cod_INE_prov`: Province code
+#'         - `cod_INE_mun`: Municipality code
+#'         - `cod_mun_district`: Municipal district code
+#'         - `cod_sec`: Section code
+#'         - `cod_poll_station`: Polling station code
+#'         - `turn`: Turnout
+#'         - `id_candidacies`: Unique ID for the candidacies
+#'         - `ballots`: Number of ballots cast
+#'         - `abbrev_candidacies`: Abbreviation of the candidacies (if `include_candidacy_names` is TRUE)
+#'         - `name_candidacies`: Full name of the candidacies (if `include_candidacy_names` is TRUE)
 #'
-#' @authors Mikaela DeSmedt(documentation),Javier Álvarez-Liébana.
+#' @details
+#' The function retrieves data from a specified GitHub repository containing raw data files for Spanish 
+#' congressional and senatorial elections. The function merges the ballots data with the candidacy names data 
+#' if the `include_candidacy_names` parameter is set to TRUE. It ensures that no duplicate columns are retained 
+#' in the final output.
+#'
+#' @examples
+#' # Fetch ballots data for the 2004 congressional election in March, including candidacy names
+#' ballots_data <- get_candidacy_ballot_data("congress", 2004, 03)
+#'
+#' # Fetch ballots data for the 2023 congressional election in July, excluding candidacy names
+#' ballots_data <- get_candidacy_ballot_data("congress", 2023, 07, include_candidacy_names = FALSE)
+#'
+#' @export
+
+get_candidacy_ballot_data <- function(type_elec, year, month, include_candidacy_names = TRUE) {
+  
+  # Ensure type_elec is a character vector
+  type_elec <- as.character(type_elec)
+  
+  # Initialize an empty list to store the data
+  combined_data_list <- list()
+  
+  # Loop through each set of parameters
+  for (i in seq_along(type_elec)) {
+    # Validate election type
+    if (!type_elec[i] %in% c("congress", "senate")) {
+      stop("Invalid election type. Allowed types are: 'congress', 'senate'")
+    }
+    
+    # Get election info from the utils.R script
+    election_info <- type_to_code_election(type_elec[i])
+    
+    # Construct the base URL and directory URL
+    base_url <- "https://github.com/mikadsr/Pollspain-data/blob/main"
+    election_dir <- glue("{base_url}/{election_info$dir}/{election_info$cod_elec}{year[i]}{sprintf('%02d', month[i])}")
+    
+    # Print the final URL for debugging
+    message("Fetching from URL: ", election_dir)
+    
+    # Fetch the ballots data
+    ballots_url <- glue("{election_dir}/raw_candidacies_poll_{type_elec[i]}_{year[i]}_{sprintf('%02d', month[i])}.rda?raw=true")
+    message("Fetching data from ", basename(ballots_url))
+    
+    # Collect raw data
+    ballots_data <- tryCatch({
+      temp_file <- tempfile(fileext = ".rda")
+      GET(ballots_url, write_disk(temp_file, overwrite = TRUE))
+      temp_env <- new.env()
+      load(temp_file, envir = temp_env)
+      df_name <- ls(temp_env)
+      data <- get(df_name, envir = temp_env)
+      data
+    }, error = function(e) {
+      message(glue("No ballots data found for election {type_elec[i]} in {sprintf('%02d', month[i])}-{year[i]}"))
+      return(NULL)
+    })
+    
+    if (is.null(ballots_data)) next
+    
+    # Optionally include the candidacy names
+    if (include_candidacy_names) {
+      candidacies_url <- glue("{election_dir}/raw_candidacies_{type_elec[i]}_{year[i]}_{sprintf('%02d', month[i])}.rda?raw=true")
+      message("Fetching candidacy names data from ", basename(candidacies_url))
+      
+      candidacies_data <- tryCatch({
+        temp_file <- tempfile(fileext = ".rda")
+        GET(candidacies_url, write_disk(temp_file, overwrite = TRUE))
+        temp_env <- new.env()
+        load(temp_file, envir = temp_env)
+        df_name <- ls(temp_env)
+        data <- get(df_name, envir = temp_env)
+        data
+      }, error = function(e) {
+        message(glue("No candidacy names data found for election {type_elec[i]} in {sprintf('%02d', month[i])}-{year[i]}"))
+        return(NULL)
+      })
+      
+      if (!is.null(candidacies_data)) {
+        # Merge ballots data with candidacy names data, avoiding duplicate columns
+        ballots_data <- ballots_data %>%
+          left_join(candidacies_data, by = "id_candidacies") %>%
+          select(-matches("\\.y$")) %>%  # Remove columns with suffix ".y" after the join
+          rename_with(~ sub("\\.x$", "", .x))  # Remove ".x" suffix from columns
+      }
+    }
+    
+    # Add the processed data to the list
+    combined_data_list[[i]] <- ballots_data
+  }
+  
+  # Combine all data frames into one
+  combined_ballots_data <- bind_rows(combined_data_list)
+  
+  return(combined_ballots_data)
+}
+
+
+#' @title aggregate_election_data
+#'
+#' @description This function aggregates election data at various hierarchical levels based on geographic scope and candidacy. It allows summarizing ballots by different levels such as Autonomous Communities (CCAA), Provinces, and Municipalities, while retaining key election information.
+#'
+#' @param ballots_data A data frame containing the election data, including ballots and candidacy information.
+#' @param scope The geographic level for data aggregation. Can be one of \code{"ccaa"}, \code{"prov"}, or \code{"mun"}. Defaults to \code{"ccaa"}.
+#' @param group_by_candidacy A logical value indicating whether to group data by candidacy name (\code{name_candidacies}). Defaults to \code{TRUE}.
+#'
+#' @return A data frame with the aggregated election data, including the total ballots and relevant election identifiers (e.g., \code{cod_elec}, \code{type_elec}, \code{date_elec}, \code{id_candidacies}, \code{abbrev_candidacies}, and \code{name_candidacies} if applicable).
+#'
+#' @authors 
+#' Mikaela DeSmedt,
+#' Javier Álvarez-Liébana.
 #' 
 #' @source Data extracted and processed from various election sources.
 #' 
-#' @keywords get_elections_data
+#' @keywords aggregate_election_data, election_data, ballots, geographic_scope, candidacy
 #' 
 #' @name aggregate_election_data
 #'
 #' @examples
 #'
-#' ## Aggregate election data
+#' ## Aggregate election data by province and candidacy
 #'
-#' # Example with proper arguments
 #' \dontrun{
-#' election_data <- data.frame( # Add appropriate data frame here
-#'   id_INE_poll_station = c("999-123-456-789"),
+#' ballots_data <- data.frame( # Add appropriate data frame here
+#'   cod_elec = "02",
 #'   type_elec = "congress",
-#'   date_elec = as.Date("2023-06-28"),
-#'   census_counting = 1000,
-#'   total_ballots = 800,
-#'   # Add other required columns
+#'   date_elec = as.Date("2023-07-23"),
+#'   id_MIR_mun = "01-04-001",
+#'   cod_MIR_ccaa = "01",
+#'   cod_INE_prov = "04",
+#'   cod_INE_mun = "001",
+#'   id_candidacies = "000053",
+#'   abbrev_candidacies = "PSOE",
+#'   name_candidacies = "Partido Socialista Obrero Español",
+#'   ballots = 500
 #' )
-#' aggregate_election_data(election_data, level = "mun", id_col = "id_INE_poll_station")
-#' }
-#'
-#' # Wrong examples
-#' \dontrun{
-#' aggregate_election_data(election_data, id_col = "non_existent_column", level = "invalid_level")
+#' 
+#' aggregate_election_data(ballots_data, scope = "prov")
 #' }
 #'
 #' @export
-aggregate_election_data <-
-  function(election_data, level = "all", id_col = "id_INE_poll_station",
-           cod_CERA = "999", prec_round = 3) {
-    
-    # Remove duplicates
-    election_data <-
-      election_data |>
-      distinct(id_elec, .data[[id_col]], .keep_all = TRUE)
-    
-    # Extract cod by level
-    if (level != "all") {
-      
-      hierarchy_levels <- c("ccaa", "prov", "mun", "mun_district",
-                            "sec", "poll_station")
-      
-      levels <- hierarchy_levels[1:which(hierarchy_levels == level)]
-      
-      for (i in 1:length(levels)) {
-        
-        election_data <-
-          election_data |>
-          mutate("cod_INE_{levels[i]}" :=
-                   extract_code(.data[[id_col]], level = levels[i]),
-                 .after = .data[[id_col]])
-        
-      }
-    }
-    
-    # Aggregation of data
-    if (level == "all") {
-      
-      levels <- "all"
-      group_vars <- "id_elec"
-      
-    } else {
-      
-      if (length(levels) <= 3) { # at mun level
-        
-        group_vars <- c("id_elec", glue("cod_INE_{levels}"), levels)
-        
-      } else {
-        
-        group_vars <- c("id_elec", glue("cod_INE_{levels}"), levels[1:3])
-      }
-      
-    }
-    
-    # n_poll_stations CERA data
-    if (length(levels) <= 2) { # at province level or greater
-      
-      n_poll_stations_CERA <-
-        election_data |>
-        filter(mun == "CERA") |>
-        reframe(n_poll_stations = n(), .by = group_vars)
-      
-      agg_data <-
-        election_data |>
-        left_join(n_poll_stations_CERA, by = group_vars) |>
-        # Replace NA
-        mutate(n_poll_stations = replace_na(n_poll_stations, 0)) |>
-        # Summary
-        reframe(type_elec = unique(type_elec),
-                date_elec = unique(date_elec),
-                n_poll_stations =
-                  n_distinct(.data[[id_col]]) - unique(n_poll_stations),
-                across(c("census_counting", "ballots_1",
-                         "ballots_2", "blank_ballots":"total_ballots"), sum),
-                turnout =
-                  round(100 * total_ballots / census_counting, prec_round),
-                porc_valid =
-                  round(100 * valid_ballots / total_ballots, prec_round),
-                porc_invalid =
-                  round(100 * invalid_ballots / total_ballots, prec_round),
-                porc_parties =
-                  round(100 * party_ballots / valid_ballots, prec_round),
-                porc_blank =
-                  round(100 * blank_ballots / valid_ballots, prec_round),
-                .by = group_vars)
-      
-    } else {
-      
-      agg_data <-
-        election_data |>
-        # Summary
-        reframe(type_elec = unique(type_elec),
-                date_elec = unique(date_elec),
-                n_poll_stations = n_distinct(.data[[id_col]]),
-                across(c("census_counting", "ballots_1",
-                         "ballots_2", "blank_ballots":"total_ballots"), sum),
-                turnout =
-                  round(100 * total_ballots / census_counting, prec_round),
-                porc_valid =
-                  round(100 * valid_ballots / total_ballots, prec_round),
-                porc_invalid =
-                  round(100 * invalid_ballots / total_ballots, prec_round),
-                porc_parties =
-                  round(100 * party_ballots / valid_ballots, prec_round),
-                porc_blank =
-                  round(100 * blank_ballots / valid_ballots, prec_round),
-                .by = group_vars) |>
-        mutate(n_poll_stations = if_else(mun == "CERA", 0, n_poll_stations))
-      
-    }
-    
-    agg_data <-
-      agg_data |>
-      left_join(get_CERA_data(election_data, id_col = id_col,
-                              level = level, cod_CERA = cod_CERA,
-                              prec_round = prec_round),
-                by = group_vars, suffix = c("", ".y")) |>
-      select(-contains(".y")) |>
-      # turnout_1 and turnout_2 over counting census without cera.
-      mutate(turnout_1 =
-               round(100 * ballots_1 / (census_counting - census_cera),
-                     prec_round),
-             turnout_2 =
-               round(100 * ballots_2 / (census_counting - census_cera),
-                     prec_round), .before = turnout) |>
-      # Relocate columns
-      relocate(type_elec, date_elec, .after = id_elec)
-    
-    # Resident population (without CERA)
-    pop_res <-
-      election_data |>
-      mutate(id_INE_mun =
-               extract_code(.data[[id_col]], level = "mun",
-                            full_cod = TRUE)) |>
-      filter(!str_detect(id_INE_mun, "-999")) |>
-      distinct(id_elec, id_INE_mun, .keep_all = TRUE) |>
-      summarise(pop_res = sum(pop_res_mun),
-                .by = group_vars)
-    
-    # Join with pop data
-    agg_data <-
-      agg_data |>
-      # Join pop res data
-      left_join(pop_res, by = group_vars) |>
-      # Relocate
-      relocate(pop_res, .after = date_elec)
-    
-    # Output
-    return(agg_data)
+
+aggregate_election_data <- function(ballots_data, 
+                                    scope = c("ccaa", "prov", "mun"), 
+                                    group_by_candidacy = TRUE) {
+  # Ensure valid scope input
+  scope <- match.arg(scope)
+  
+  # Extract year from date_elec if it's not already in the data
+  ballots_data <- ballots_data %>%
+    mutate(year = year(date_elec))
+  
+  # Determine grouping variables based on the scope
+  group_vars <- c("year", "cod_elec", "type_elec", "date_elec", 
+                  "id_candidacies", "abbrev_candidacies")
+  
+  if (group_by_candidacy) {
+    group_vars <- c(group_vars, "name_candidacies")
   }
+  
+  if (scope == "ccaa") {
+    group_vars <- c(group_vars, "cod_MIR_ccaa")
+  } else if (scope == "prov") {
+    group_vars <- c(group_vars, "cod_MIR_ccaa", "cod_INE_prov")
+  } else if (scope == "mun") {
+    group_vars <- c(group_vars, "cod_MIR_ccaa", "cod_INE_prov", "cod_INE_mun")
+  }
+  
+  # Aggregate data by the determined grouping variables
+  aggregated_data <- ballots_data %>%
+    group_by(across(all_of(group_vars))) %>%
+    summarize(total_ballots = sum(ballots, na.rm = TRUE), .groups = "drop")
+  
+  return(aggregated_data)
+}

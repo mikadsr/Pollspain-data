@@ -65,13 +65,13 @@ import_raw_candidates_file <- function(type_elec, year, month,
   if (year >= 2004) {
     starts <- starts_after_2004
     ends <- ends_after_2004
-    col_names <- c("election_type", "year", "month", "round_number", "province_code", "district_code", 
+    col_names <- c("cod_elec", "year", "month", "round_number", "province_code", "district_code", 
                    "municipality_code", "id_candidacies", "order_number", "candidate_type", "candidate_name",
                    "candidate_surname1", "candidate_surname2", "candidate_sex", "candidate_id_card", "candidate_elected")
   } else {
     starts <- starts_before_2004
     ends <- ends_before_2004
-    col_names <- c("election_type", "year", "month", "round_number", "province_code", "district_code", 
+    col_names <- c("cod_elec", "year", "month", "round_number", "province_code", "district_code", 
                    "municipality_code", "id_candidacies", "order_number", "candidate_type", "candidate_full_name")
   }
   
