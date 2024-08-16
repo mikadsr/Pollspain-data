@@ -1,67 +1,71 @@
-#' @title Get municipal census data
+#' @title Get Municipal Census Data
 #'
-#' @description Get municipal census data for one or more elections at the municipal
-#' level. This function is a wrapper of \code{import_raw_mun_MIR_files()}
-#' function for a set of elections.
+#' @description Fetch municipal census data for one or more elections at the municipal
+#' level. This function downloads and processes raw municipal data files for the specified elections.
 #'
 #' @inheritParams type_to_code_election
-#' @param type_elec Vector or single value of election types.
-#' @param year Vector or single value of years of elections to be considered.
-#' @param month Vector or single value of months of elections to be considered.
-#' Please ensure (see \code{dates_elections_spain}) that elections of the
-#' provided type are available for the given year and month.
+#' @param type_elec A vector or single value representing the types of elections.
+#' @param year A vector or single value representing the years of the elections to be considered.
+#' @param month A vector or single value representing the months of the elections to be considered.
+#' Ensure (refer to \code{dates_elections_spain}) that elections of the
+#' specified type are available for the provided year and month.
 #'
-#' @return A tibble (as many rows as municipalities for each election) with the
-#' following elements:
-#' \item{cod_elec}{code of type of elections: \code{"01"} (referendum),
+#' @return A tibble with rows corresponding to municipalities for each election, including the
+#' following columns:
+#' \item{cod_elec}{Code representing the type of election: \code{"01"} (referendum),
 #' \code{"02"} (congress), \code{"03"} (senate), \code{"04"} (local elections),
 #' \code{"06"} (cabildo - Canarian council - elections), \code{"07"}
-#' (European Parliament elections)}
-#' \item{type_elec}{type of election.}
-#' \item{date_elec}{date of election.}
-#' \item{id_INE_mun}{municipality's id built from ccaa-prov-mun codes provided
+#' (European Parliament elections).}
+#' \item{type_elec}{Type of election.}
+#' \item{date_elec}{Date of the election.}
+#' \item{id_INE_mun}{Municipality ID constructed from the ccaa-prov-mun codes provided
 #' by INE.}
-#' \item{id_MIR_mun}{municipality's id built from ccaa-prov-mun codes provided
-#' by Spanish Ministry of Interior (MIR).}
-#' \item{cod_INE_ccaa, cod_MIR_ccaa, ccaa}{codes and name for regions (ccaa)
-#' to which municipalities belong.}
-#' \item{cod_INE_prov, prov}{codes and name for provinces to which municipalities belong.}
-#' \item{cod_INE_mun, cd_INE_mun, mun}{code, digit control, and name for
+#' \item{id_MIR_mun}{Municipality ID constructed from the ccaa-prov-mun codes provided
+#' by the Spanish Ministry of Interior (MIR).}
+#' \item{cod_INE_ccaa, cod_MIR_ccaa, ccaa}{Codes and names for regions (ccaa)
+#' to which the municipalities belong.}
+#' \item{cod_INE_prov, prov}{Codes and names for the provinces to which the municipalities belong.}
+#' \item{cod_INE_mun, mun}{Code, and name for
 #' municipalities.}
-#' \item{cod_mun_jud_district, cod_mun_prov_council}{codes of judicial
-#' district and province council.}
-#' \item{n_poll_stations}{number of poll stations at each municipality.}
-#' \item{pop_res_mun}{census of people who are living (CER + CERA).}
-#' \item{census_INE_mun}{people from \code{pop_res_mun} who are
-#' allowed to vote.}
-#' \item{census_counting_mun}{people from \code{census_INE_mun} after claims.}
-#' \item{census_CERE_mun}{census of foreigners, just for EU elections.}
+#' \item{cod_mun_jud_district, cod_mun_prov_council}{Codes for the judicial
+#' district and provincial council.}
+#' \item{n_poll_stations}{Number of polling stations in each municipality.}
+#' \item{pop_res_mun}{Population census of residents (CER + CERA).}
+#' \item{census_INE_mun}{Population from \code{pop_res_mun} eligible to vote.}
+#' \item{census_counting_mun}{Eligible voters after claims.}
+#' \item{census_CERE_mun}{Census of foreign nationals, relevant only for EU elections.}
+#'
+#' @details
+#' This function fetches municipal-level data for the specified elections by downloading
+#' the corresponding `.rda` files from GitHub and processing them into a tidy format.
+#' It automatically handles the download, loading, and merging of data across multiple
+#' election periods as specified by the user.
 #'
 #' @authors
 #' Mikaela DeSmedt, Javier Álvarez-Liébana.
 #' @source Some definitions of variables were extracted from
-#' \url{https://www.ige.gal}
+#' \url{https://www.ige.gal}.
 #' @keywords get_elections_data
 #' @name get_mun_census_data
 #' @import crayon
 #' @examples
 #'
-#' ## Get municipal census data for multiple elections
+#' ## Example usage to combine data from different elections into one table
 #' data("dates_elections_spain")
 #' \dontrun{
-#' # Example usage to combine data from different elections into one table
+#' # Fetching data for multiple elections
 #' type_elec_vec <- c("congress", "congress", "congress")
 #' year_vec <- c(2019, 2019, 2016)
 #' month_vec <- c(11, 4, 6)
 #'
 #' combined_mun_census_data <- get_mun_census_data(type_elec_vec, year_vec, month_vec)
 #'
-#' # Example for a single election
+#' # Fetching data for a single election
 #' mun_census_data <- get_mun_census_data("congress", 2019, 4)
 #' }
 #'
 #' @export
-#' 
+
 get_mun_census_data <- function(type_elec, year, month) {
   # Ensure input parameters are vectors
   type_elec_vec <- as.vector(type_elec)
@@ -70,17 +74,6 @@ get_mun_census_data <- function(type_elec, year, month) {
   
   # Initialize an empty list to store the data
   combined_data_list <- list()
-  
-  # Local helper function to read RDA file from GitHub
-  read_rda_from_github <- function(url) {
-    temp_file <- tempfile(fileext = ".rda")
-    GET(url, write_disk(temp_file, overwrite = TRUE))
-    temp_env <- new.env()
-    load(temp_file, envir = temp_env)
-    df_name <- ls(temp_env)
-    data <- get(df_name, envir = temp_env)
-    return(data)
-  }
   
   # Loop through the vectors and fetch the data
   for (i in seq_along(type_elec_vec)) {
@@ -102,9 +95,24 @@ get_mun_census_data <- function(type_elec, year, month) {
     # Print the file URL for debugging purposes
     message("Fetching data from ", file_url)
     
-    # Fetch the file
+    # Fetch the file using download.file instead of GET
     tryCatch({
-      mun_data <- read_rda_from_github(file_url)
+      temp_file <- tempfile(fileext = ".rda")
+      download.file(file_url, destfile = temp_file, mode = "wb")
+      
+      # Check the downloaded file before loading
+      if (file.info(temp_file)$size == 0) {
+        stop("Downloaded file is empty. The URL might be incorrect or the file may not exist.")
+      }
+      
+      # Load the data into a new environment
+      temp_env <- new.env()
+      load(temp_file, envir = temp_env)
+      df_name <- ls(temp_env)
+      mun_data <- get(df_name, envir = temp_env)
+      
+      # Debug: Print some basic information about the loaded data
+      print(head(mun_data))
       
       # Join MIR and INE information
       mun_data <- mun_data %>%
@@ -112,7 +120,7 @@ get_mun_census_data <- function(type_elec, year, month) {
         select(-mun.x) %>%
         relocate(cod_INE_ccaa, .before = cod_MIR_ccaa) %>%
         relocate(id_INE_mun, .before = id_MIR_mun) %>%
-        relocate(cd_INE_mun, mun, .after = cod_INE_mun) %>%
+        relocate(mun, .after = cod_INE_mun) %>%
         relocate(ccaa, .after = cod_MIR_ccaa) %>%
         relocate(prov, .after = cod_INE_prov)
       
@@ -245,7 +253,7 @@ get_poll_station_data <- function(type_elec, year, month, prec_round = 3) {
         relocate(cod_INE_ccaa, .before = cod_MIR_ccaa) %>%
         relocate(ccaa, .after = cod_MIR_ccaa) %>%
         relocate(prov, .after = cod_INE_prov) %>%
-        relocate(cd_INE_mun, mun, .after = cod_INE_mun) %>%
+        relocate(mun, .after = cod_INE_mun) %>%
         select(-c(census_counting_mun, census_CERE_mun, census_INE_mun)) %>%
         bind_rows(poll_station_data %>% filter(cod_INE_mun == "999")) %>%
         left_join(cod_INE_mun %>%
