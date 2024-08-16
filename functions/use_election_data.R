@@ -30,10 +30,6 @@
 #'
 #' @export
 allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
-  # (function body remains the same as shown above)
-}
-
-allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
   
   # Step 1: Aggregate votes by province, party, and ccaa
   votes_by_province <- last_election_ballots %>%
@@ -48,9 +44,16 @@ allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
     filter(year == election_year) %>%
     select(cod_INE_prov, prov, seats)
   
-  # Join the aggregated votes with seat distribution data
+  # Step 3: Join the aggregated votes with seat distribution data
   votes_with_seats <- votes_by_province %>%
     left_join(seats_per_province, by = "cod_INE_prov")
+  
+  # Step 4: Filter out candidacies that do not meet the 3% threshold
+  votes_with_seats <- votes_with_seats %>%
+    group_by(cod_INE_prov) %>%
+    mutate(total_votes_prov = sum(total_votes)) %>%
+    filter(total_votes / total_votes_prov >= 0.03) %>%
+    ungroup()
   
   # Define the D'Hondt allocation function
   distribute_seats_dhondt <- function(votes, num_seats) {
@@ -72,7 +75,7 @@ allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
     return(seat_allocation)
   }
   
-  # Apply the D'Hondt function to each province while preserving columns
+  # Step 5: Apply the D'Hondt function to each province while preserving columns
   seat_distribution_results <- votes_with_seats %>%
     filter(cod_INE_prov != "99") %>%
     group_by(cod_INE_prov, cod_MIR_ccaa, prov) %>%
@@ -82,11 +85,11 @@ allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
       .groups = 'drop'
     )
   
-  # Expand the list columns to show seats per party
+  # Step 6: Expand the list columns to show seats per party
   seat_distribution_expanded <- seat_distribution_results %>%
     unnest(cols = c(seats_allocated, party_codes))
   
-  # Join back with party names and get the ccaa column from cod_INE_mun
+  # Step 7: Join back with party names and get the ccaa column from cod_INE_mun
   final_seat_distribution <- seat_distribution_expanded %>%
     left_join(last_election_ballots %>%
                 select(cod_candidacies_prov, abbrev_candidacies, name_candidacies) %>%
@@ -97,7 +100,7 @@ allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
                 distinct(),
               by = "cod_INE_prov")
   
-  # Aggregate results based on the selected level
+  # Step 8: Aggregate results based on the selected level
   if (level == "ccaa") {
     final_seat_distribution <- final_seat_distribution %>%
       group_by(cod_MIR_ccaa, abbrev_candidacies, name_candidacies, ccaa) %>%
@@ -112,7 +115,7 @@ allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
       summarize(seats = sum(seats_allocated), .groups = 'drop')
   }
   
-  # Filter out candidacies with 0 seats
+  # Step 9: Filter out candidacies with 0 seats
   final_seat_distribution <- final_seat_distribution %>%
     filter(seats > 0)
   
