@@ -123,70 +123,176 @@ allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
   return(final_seat_distribution)
 }
 
-
-#' @title Plot Election Results by Province on a Map of Spain
+#' @title Plot Spanish Congress Election Results
 #'
-#' @description 
-#' This function visualizes election results by province on a map of Spain. 
-#' The function merges election data with geographic data of Spanish provinces 
-#' and then colors each province according to the party that won the most seats there. 
-#' It allows for a default color scheme provided via an external resource or the use 
-#' of a user-defined color scheme.
+#' @description This function generates a map of Spain, visualizing the election results 
+#' for the Spanish Congress of Deputies. The map can display results by province 
+#' or autonomous community (CCAA) based on the `level` argument. The function 
+#' colors each region according to the party with the most votes in that area.
 #'
-#' @param election_data A data frame containing the election results with the following structure:
-#'   \describe{
-#'     \item{cod_INE_prov}{character: Province code (as a string).}
-#'     \item{prov}{character: Name of the province.}
-#'     \item{cod_MIR_ccaa}{character: Autonomous community code.}
-#'     \item{abbrev_candidacies}{character: Abbreviation of the political party or candidacy.}
-#'     \item{name_candidacies}{character: Full name of the political party or candidacy.}
-#'     \item{ccaa}{character: Name of the autonomous community.}
-#'     \item{seats}{integer: Number of seats won by the candidacy in the province.}
-#'   }
-#' @param colors_url A string providing the URL to the .rda file containing the color mapping 
-#'   for each party. The default URL is 
-#'   "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda".
+#' @param election_data A data frame containing the election results. It should include 
+#' the following columns:
+#' \describe{
+#'   \item{cod_INE_prov}{Character. The INE code for provinces.}
+#'   \item{prov}{Character. The name of the province.}
+#'   \item{cod_MIR_ccaa}{Character. The MIR code for autonomous communities.}
+#'   \item{abbrev_candidacies}{Character. The abbreviated name of the political party.}
+#'   \item{name_candidacies}{Character. The full name of the political party.}
+#'   \item{ccaa}{Character. The name of the autonomous community.}
+#'   \item{ballots}{Numeric. The number of ballots received by the party.}
+#' }
+#' @param level A character string indicating the geographic level to plot. 
+#' Options are "prov" (default) for province-level results, and "ccaa" for 
+#' autonomous community-level results.
+#' @param colors_url A character string specifying the URL from which to 
+#' download the color codes for the political parties. Default is 
+#' "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda".
 #'
-#' @return This function does not return a value. Instead, it generates a plot visualizing the 
-#'   election results on a map of Spain.
+#' @return A ggplot2 object showing the election results on a map of Spain.
+#'
+#' @import ggplot2
+#' @import dplyr
+#' @import mapSpain
+#' @importFrom utils download.file
+#' @importFrom utils load
+#' @importFrom grDevices colors
 #'
 #' @examples
-#' # Assuming 'a' is the election data frame:
-#' plot_seat_allocation(election_data = a)
+#' \dontrun{
+#' # Example usage with election data
+#' plot_election_results(election_data = a2023, level = "prov")
+#' plot_election_results(election_data = a2023, level = "ccaa")
+#' }
 #'
-#' @authors 
-#' Mikaela DeSmedt
-#' 
-plot_election_results  <- function(election_data, colors_url = "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda") {
+#' @export
+plot_election_results <- function(election_data, level = "prov", colors_url = "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda") {
   
-  # Load the party colors from the specified URL
-  temp_file <- tempfile()
-  download.file(colors_url, temp_file, quiet = TRUE)
-  load(temp_file)
+  # Load necessary packages
+  library(ggplot2)
+  library(dplyr)
+  library(mapSpain)
   
-  # Ensure the province codes in the election data are characters
-  election_data$cod_INE_prov <- as.character(election_data$cod_INE_prov)
+  # Load the province or CCAA map depending on the level
+  if (level == "prov") {
+    title <- "Spanish Congress Election Results by Province"
+    map_data <- esp_get_prov()
+    merge_by <- "cpro"
+    election_by <- "cod_INE_prov"
+  } else if (level == "ccaa") {
+    title <- "Spanish Congress Election Results by CCAA"
+    map_data <- esp_get_ccaa()
+    merge_by <- "codauto"
+    election_by <- "cod_MIR_ccaa"
+  }
   
-  # Get the provinces map data
-  provinces_map <- esp_get_prov()
+  # Load the party colors from the provided URL or a local file
+  temp <- tempfile()
+  download.file(colors_url, temp, quiet = TRUE)
+  load(temp)
+  
+  # Ensure the province or CCAA codes in both dataframes are characters
+  election_data[[election_by]] <- as.character(election_data[[election_by]])
+  
+  # Aggregate ballots to find the winning party by region
+  election_data <- election_data %>%
+    group_by(!!sym(election_by), abbrev_candidacies) %>%
+    summarize(total_ballots = sum(ballots), .groups = 'drop') %>%
+    group_by(!!sym(election_by)) %>%
+    slice_max(total_ballots, with_ties = FALSE)
   
   # Merge the map with the election results
-  merged_data <- merge(provinces_map, election_data, by.x = "cpro", by.y = "cod_INE_prov", all.x = TRUE)
+  merged_data <- merge(map_data, election_data, by.x = merge_by, by.y = election_by, all.x = TRUE)
   
-  # Remove duplicates in the color data, keeping the first occurrence
+  # Handle duplicates in case of many-to-many relationships
   party_colors_hex_unique <- party_colors_hex %>%
     distinct(abbrev_candidacies, .keep_all = TRUE)
   
-  # Join the color data with the merged data
+  # Join color data with merged_data
   merged_data <- merged_data %>%
     left_join(party_colors_hex_unique, by = "abbrev_candidacies")
   
   # Plotting the results using the colors from the joined data
   ggplot(merged_data) +
     geom_sf(aes(fill = abbrev_candidacies), color = "white") +
-    scale_fill_manual(values = setNames(merged_data$party_color, merged_data$abbrev_candidacies)) +
-    labs(title = "Spanish Congress Election Results by Province",
-         fill = "Winning Party") +
+    scale_fill_manual(values = setNames(party_colors_hex_unique$party_color, party_colors_hex_unique$abbrev_candidacies)) +
+    labs(title = title, fill = "Winning Party") +
     theme_void() +
     theme(legend.position = "bottom")
+}
+plot_election_results(election_data = a2023, level = "ccaa")
+
+
+#' @title Plot Parliamentary Seat Distribution
+#'
+#' @description This function generates a semicircle plot of parliamentary seat distribution for a given election dataset using the ggparliament package. It also fetches custom party colors from an external source.
+#'
+#' @param election_data A data frame containing election results with the following structure:
+#' \itemize{
+#'   \item \code{cod_INE_prov}: Province code
+#'   \item \code{prov}: Province name
+#'   \item \code{cod_MIR_ccaa}: Autonomous community code
+#'   \item \code{abbrev_candidacies}: Party abbreviations
+#'   \item \code{name_candidacies}: Full party names
+#'   \item \code{ccaa}: Autonomous community name
+#'   \item \code{seats}: Number of seats won by each party
+#' }
+#' @param colors_url A string URL pointing to the location of the RDA file containing party colors. Default is set to "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda".
+#'
+#' @return A ggplot object representing the parliamentary seat distribution.
+#'
+#' @examples
+#' \dontrun{
+#' # Load example data
+#' data(a)
+#' # Plot the seat distribution
+#' plot_parliament_distribution(election_data = a)
+#' }
+#'
+#' @import dplyr
+#' @import ggparliament
+#' @import ggplot2
+#' @export
+plot_parliament_distribution <- function(election_data, colors_url = "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda") {
+  
+  # Step 1: Group the data by abbrev_candidacies and sum the seats
+  seat_data <- election_data %>%
+    group_by(abbrev_candidacies) %>%
+    summarise(seats = sum(seats))
+  
+  # Step 2: Load party colors from the provided URL or a local file
+  temp <- tempfile()
+  download.file(colors_url, temp, quiet = TRUE)
+  load(temp)
+  
+  # Step 3: Prepare data for ggparliament
+  parliament_data <- parliament_data(
+    election_data = seat_data,
+    parl_rows = 10, # Adjust the number of rows as needed
+    party_seats = seat_data$seats,
+    type = "semicircle"
+  )
+  
+  # Step 4: Join color data with parliament_data
+  parliament_data <- parliament_data %>%
+    left_join(party_colors_hex, by = "abbrev_candidacies")
+  
+  # Step 5: Create the ggparliament plot
+  plot <- ggplot(parliament_data, aes(x = x, 
+                                      y = y, 
+                                      color = abbrev_candidacies, 
+                                      fill = abbrev_candidacies)) +
+    geom_parliament_seats() +
+    scale_fill_manual(values = setNames(parliament_data$party_color, parliament_data$abbrev_candidacies)) +
+    scale_color_manual(values = setNames(parliament_data$party_color, parliament_data$abbrev_candidacies)) +
+    theme_ggparliament() +
+    labs(
+      title = "Spanish Congress Election Results",
+      subtitle = "Distribution of Seats by Party"
+    ) +
+    theme_void()+
+    theme(legend.position = "bottom",  legend.title = element_blank())  # This line positions the legend at the bottom
+  
+  
+  # Return the plot
+  return(plot)
 }
