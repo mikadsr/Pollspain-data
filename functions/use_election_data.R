@@ -1,6 +1,7 @@
 #' @title Allocate Seats Using the D'Hondt Method for the Spanish Congress
 #'
-#' @description This function allocates seats to political parties for the Spanish Congress of Deputies 
+#' @description
+#' This function allocates seats to political parties for the Spanish Congress of Deputies 
 #' using the D'Hondt method. It allows for aggregation of seat distribution at the provincial, 
 #' autonomous community, or national level.
 #'
@@ -8,9 +9,10 @@
 #' @param level The aggregation level for the final seat distribution. Options are `"prov"` (default) 
 #'   for provincial level, `"ccaa"` for autonomous community level, and `"national"` for national level.
 #'
-#' @return A data frame with the final seat distribution, filtered to remove candidacies with zero seats.
+#' @return
+#' A data frame with the final seat distribution, filtered to remove candidacies with zero seats.
 #'
-#' @details 
+#' @details
 #' This function performs the following steps:
 #' 1. Aggregates votes by province, autonomous community, and party.
 #' 2. Determines the number of seats per province based on the election year using the internal dataset `seat_distribution_congress`.
@@ -19,16 +21,17 @@
 #' 5. Aggregates the results based on the specified level.
 #' 6. Filters out candidacies with zero seats before returning the final result.
 #'
+#'#' @author Mikaela DeSmedt
+#'
 #' @examples
 #' # Example usage:
 #' final_seat_distribution <- allocate_seats_dhondt(last_election_ballots, 
 #'                                                  level = "ccaa")
 #' print(final_seat_distribution)
 #'
-#' @author DeSmedt, Mikaela
 #' 
-#'
 #' @export
+
 allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
   
   # Step 1: Aggregate votes by province, party, and ccaa
@@ -125,7 +128,8 @@ allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
 
 #' @title Plot Spanish Congress Election Results
 #'
-#' @description This function generates a map of Spain, visualizing the election results 
+#' @description
+#' This function generates a map of Spain, visualizing the election results 
 #' for the Spanish Congress of Deputies. The map can display results by province 
 #' or autonomous community (CCAA) based on the `level` argument. The function 
 #' colors each region according to the party with the most votes in that area.
@@ -142,13 +146,23 @@ allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
 #'   \item{ballots}{Numeric. The number of ballots received by the party.}
 #' }
 #' @param level A character string indicating the geographic level to plot. 
-#' Options are "prov" (default) for province-level results, and "ccaa" for 
+#' Options are `"prov"` (default) for province-level results, and `"ccaa"` for 
 #' autonomous community-level results.
 #' @param colors_url A character string specifying the URL from which to 
 #' download the color codes for the political parties. Default is 
 #' "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda".
 #'
-#' @return A ggplot2 object showing the election results on a map of Spain.
+#' @details
+#' This function performs the following steps:
+#' 1. Downloads the color codes for political parties from the specified URL.
+#' 2. Processes the election data to match the required format for plotting.
+#' 3. Generates a map of Spain with regions colored according to the party with the most votes.
+#' 4. Customizes the map based on the specified `level` parameter.
+#'
+#' @author Mikaela DeSmedt
+#'
+#' @return
+#' A ggplot2 object showing the election results on a map of Spain.
 #'
 #' @import ggplot2
 #' @import dplyr
@@ -164,6 +178,7 @@ allocate_seats_dhondt <- function(last_election_ballots, level = "prov") {
 #' plot_election_results(election_data = a2023, level = "ccaa")
 #' }
 #'
+#' 
 #' @export
 plot_election_results <- function(election_data, level = "prov", colors_url = "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda") {
   
@@ -224,7 +239,8 @@ plot_election_results(election_data = a2023, level = "ccaa")
 
 #' @title Plot Parliamentary Seat Distribution
 #'
-#' @description This function generates a semicircle plot of parliamentary seat distribution for a given election dataset using the ggparliament package. It also fetches custom party colors from an external source.
+#' @description
+#' This function generates a semicircle plot of parliamentary seat distribution for a given election dataset using the `ggparliament` package. It also fetches custom party colors from an external source to enhance the visual representation of the results.
 #'
 #' @param election_data A data frame containing election results with the following structure:
 #' \itemize{
@@ -238,7 +254,22 @@ plot_election_results(election_data = a2023, level = "ccaa")
 #' }
 #' @param colors_url A string URL pointing to the location of the RDA file containing party colors. Default is set to "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda".
 #'
-#' @return A ggplot object representing the parliamentary seat distribution.
+#' @details
+#' This function performs the following steps:
+#' 1. Downloads the party color information from the specified URL.
+#' 2. Processes the election data to prepare it for visualization.
+#' 3. Generates a semicircle plot showing the distribution of parliamentary seats among parties.
+#' 4. Customizes the plot using the downloaded party colors and visualizes the seat allocation effectively.
+#'
+#'@author Mikaela DeSmedt, Javier Álvarez-Liébana
+#'
+#' @return
+#' A ggplot object representing the parliamentary seat distribution.
+#'
+#' @import dplyr
+#' @import ggparliament
+#' @import ggplot2
+#' @export
 #'
 #' @examples
 #' \dontrun{
@@ -248,10 +279,8 @@ plot_election_results(election_data = a2023, level = "ccaa")
 #' plot_parliament_distribution(election_data = a)
 #' }
 #'
-#' @import dplyr
-#' @import ggparliament
-#' @import ggplot2
-#' @export
+#'
+#'@export
 plot_parliament_distribution <- function(election_data, colors_url = "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda") {
   
   # Step 1: Group the data by abbrev_candidacies and sum the seats

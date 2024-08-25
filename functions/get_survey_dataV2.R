@@ -1,32 +1,40 @@
-library(dplyr)
-library(glue)
-library(purrr)
-library(httr)
-
-#' Get Survey Data from GitHub
+# Load required libraries
+#check, install if necessary, and load the required packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, glue, purr, httr)
+#' @title Get Survey Data from GitHub
 #'
-#' This function fetches and processes survey data from the specified GitHub directory.
+#' @description
+#' This function fetches and processes survey data from the specified GitHub directory. It downloads and combines RDA files containing survey data from a specified range of years and months, applies various filters based on the user’s parameters, and returns a cleaned and processed data frame.
 #'
-#' @param from The start year for fetching surveys (default is 1982)
-#' @param to The end year for fetching surveys (default is 2023)
-#' @param min_days_to Minimum number of days to the election for filtering (default is NULL)
-#' @param max_days_to Maximum number of days to the election for filtering (default is NULL)
-#' @param select_polling_firm String matching in polling_firm column (default is "all")
-#' @param select_media String matching in media column (default is "all")
-#' @param select_parties Character vector specifying which columns (parties) to keep (default is "all")
-#' @param min_field_days Minimum number of fieldwork days (default is NULL)
-#' @param max_field_days Maximum number of fieldwork days (default is NULL)
-#' @param min_size Minimum sample size (default is NULL)
-#' @param include_media Whether to include media information (default is TRUE)
-#' @param include_exit_polls Whether to include exit polls in the data (default is TRUE)
-#' @return Data frame of processed survey data
+#' @param from The start year for fetching surveys (default is 1982). The beginning of the period for which survey data should be retrieved.
+#' @param to The end year for fetching surveys (default is 2023). The end of the period for which survey data should be retrieved.
+#' @param min_days_to Minimum number of days to the election for filtering (default is NULL). If specified, only surveys conducted at least this many days before the election are included.
+#' @param max_days_to Maximum number of days to the election for filtering (default is NULL). If specified, only surveys conducted no more than this many days before the election are included.
+#' @param select_polling_firm String matching in polling_firm column (default is "all"). If specified, only surveys from polling firms matching this string are included.
+#' @param select_media String matching in media column (default is "all"). If specified, only surveys from media outlets matching this string are included.
+#' @param select_parties Character vector specifying which columns (parties) to keep (default is "all"). If specified, only columns corresponding to the specified parties are retained.
+#' @param min_field_days Minimum number of fieldwork days (default is NULL). If specified, only surveys with at least this many days of fieldwork are included.
+#' @param max_field_days Maximum number of fieldwork days (default is NULL). If specified, only surveys with no more than this many days of fieldwork are included.
+#' @param min_size Minimum sample size (default is NULL). If specified, only surveys with at least this sample size are included.
+#' @param include_media Whether to include media information (default is TRUE). If set to FALSE, media information will be excluded from the results.
+#' @param include_exit_polls Whether to include exit polls in the data (default is TRUE). If set to FALSE, exit polls will be excluded from the results.
+#'
+#' @return
+#' Data frame of processed survey data. The resulting data frame includes columns such as \code{polling_firm}, \code{media}, \code{sample_size}, \code{turnout}, \code{fieldwork_start}, \code{fieldwork_end}, \code{date_elec}, \code{fieldwork_duration}, \code{is_exit_poll}, \code{party}, and \code{vote_share}.
+#'
+#' @details
+#' The function retrieves and processes survey data files from a specified GitHub directory, applying user-defined filters to the data. The result is a cleaned and combined data frame with relevant survey information, including optional media and exit poll data.
+#'
+#' @authors
+#' Mikaela DeSmedt, Javier Álvarez-Liébana
+#'
 #' @importFrom dplyr mutate filter select
 #' @importFrom httr GET content stop_for_status
 #' @importFrom glue glue
 #' @importFrom lubridate dmy as.Date
 #' @importFrom purrr map compact
-#' @author DeSmedt, Mikaela. 
-#' @export
+#'
 #' @examples
 #' # Correct usage
 #' survey_data <- get_survey_data(from = 1982, to = 1986, min_days_to = 3)
@@ -36,20 +44,65 @@ library(httr)
 #' survey_data <- get_survey_data(from = 1982, to = 1986, include_exit_polls = FALSE)
 #' print(head(survey_data))
 #'
+#' # Fetching Data from 2000 to 2005 with Maximum Days to Election
+#' survey_data_2 <- get_survey_data(from = 2000, to = 2005, max_days_to = 100)
+#' print(head(survey_data_2))
+#'
+#' # Fetching Data from 1990 to 1995 without media
+#' survey_data_3 <- get_survey_data(from = 1990, to = 1995, include_media = FALSE)
+#' print(head(survey_data_3))
+#'
+#' # Fetching Data from 1982 to 2020 with Both Minimum and Maximum Days to Election
+#' survey_data_4 <- get_survey_data(from = 1982, to = 2020, min_days_to = 10, max_days_to = 200)
+#' print(head(survey_data_4))
+#'
+#' # Fetching Data from 1982 to 2020 with Specific Polling Firm
+#' survey_data_5 <- get_survey_data(from = 1982, to = 2020, select_polling_firm = "CIS")
+#' print(head(survey_data_5))
+#'
+#' # Fetching Data from 1982 to 2020 with Specific Media
+#' survey_data_6 <- get_survey_data(from = 1982, to = 2020, select_media = "El País")
+#' print(head(survey_data_6))
+#'
+#' # Fetching Data from 1982 to 2020 with Minimum Sample Size
+#' survey_data_7 <- get_survey_data(from = 1982, to = 2020, min_size = 1000)
+#' print(head(survey_data_7))
+#'
+#' # Fetching Data from 1982 to 2020 with Specific Parties
+#' survey_data_8 <- get_survey_data(from = 1982, to = 2020, select_parties = c("psoe", "pp"))
+#' print(head(survey_data_8))
+#'
 #' # Incorrect usage
-#' # survey_data <- get_survey_data(from = 1986, to = 1982)
-#' # survey_data <- get_survey_data(from = 1982, to = 2023, min_days_to = "three")
+#' # End Year Before Start Year
+#' # This should raise an error or warning
+#' # Reason: The 'to' year is earlier than the 'from' year, which is logically incorrect.
+#' \dontrun{
+#' survey_data_9 <- get_survey_data(from = 1986, to = 1982)
+#' }
+#'
+#' # Non-Numeric min_days_to Value
+#' # This should raise an error
+#' # Reason: The min_days_to parameter expects a numeric value, but a string is provided.
+#' \dontrun{
+#' survey_data_10 <- get_survey_data(from = 1982, to = 2023, min_days_to = "three")
+#' }
+#'
+#' # Fetching Data Beyond Available Date Range
+#' # This should raise an error or return an empty data frame
+#' # Reason: There are no survey data files available for the specified date range.
+#' \dontrun{
+#' survey_data_11 <- get_survey_data(from = 1900, to = 1910)
+#' }
+#'
+#' # Invalid Date Range with Future Dates
+#' # This should raise an error or warning
+#' # Reason: The specified date range includes future years for which no survey data files exist.
+#' \dontrun{
+#' survey_data_12 <- get_survey_data(from = 2025, to = 2030)
+#' }
+#'
+#' @export
 
-
-
-# Load necessary libraries
-library(dplyr)
-library(httr)
-library(glue)
-library(lubridate)
-library(purrr)
-
-# Function to get survey data
 get_survey_data <- function(from = 1982, to = 2023, 
                             min_days_to = NULL, 
                             max_days_to = NULL,
@@ -182,71 +235,73 @@ get_survey_data <- function(from = 1982, to = 2023,
   # Reorder columns to maintain the original dataset order
   raw_surveys <- raw_surveys %>%
     select(polling_firm, media, sample_size, turnout, fieldwork_start, fieldwork_end, 
-           date_elec, fieldwork_duration, is_exit_poll, party, vote_share)
+           date_elec, fieldwork_duration, is_exit_poll, party, vote_share) |> 
+    mutate(party = case_when(
+      party == "psoe" ~ "PSOE",
+      party == "pp" ~ "PP",
+      party == "iu" ~ "IU",
+      party == "ci_u" ~ "CIU",
+      party == "basque_nationalist_party" ~ "BNG",
+      party == "erc" ~ "ERC",
+      party == "cc" & !is.na(party) ~ "CC-NC",
+      party == "hb" & !is.na(party) ~ "HB",
+      party == "ea" ~ "EAJ-PNV",
+      party == "galician_nationalist_bloc" ~ "BNG",
+      party == "uv" ~ "UV",
+      party == "pa" ~ "PA",
+      party == "cds" ~ "CDS",
+      party == "par" ~ "PAR",
+      party == "u_py_d" ~ "UPD",
+      party == "unidas_podemos" ~ "UP",
+      party == "cs" ~ "CS",
+      party == "erc_sobiranistes" ~ "ERC",
+      party == "pacma" ~ "PACMA",
+      party == "eh_bildu" ~ "EH BILDU",
+      party == "c_ca" ~ "CC-CN",
+      party == "vox" ~ "VOX",
+      party == "compromis" ~ "COMPROMIS",
+      party == "jx_cat" ~ "JXCAT-JUNTS",
+      party == "p_de_cat" ~ "PDECAT-E-CIU",
+      party == "ap_pdp_pl" ~ "AP",
+      party == "prd" ~ "PRD",
+      party == "muc" ~ "MUC",
+      party == "ee" ~ "EH BILDU",
+      party == "galician_coalition" ~ "CG",
+      party == "pce" ~ "PCE",
+      party == "andalusian_progress_party" ~ "PAP",
+      party == "euskadiko_ezkerra" ~ "PSOE",
+      party == "erc_cat_si" ~ "ERC",
+      party == "di_l" ~ "DI L",
+      party == "cdc" ~ "CDC",
+      party == "podemos" ~ "UP",
+      party == "iu_u_pe_c" ~ "IU",
+      party == "sumar" ~ "SUMAR",
+      party == "junts" ~ "JXCAT-JUNTS",
+      party == "cup" ~ "CUP",
+      party == "bng" ~ "BNG",
+      party == "upn" ~ "UPN",
+      party == "ev" ~ "EV",
+      party == "ucd" ~ "UCD",
+      party == "ap" ~ "AP",
+      party == "psa_pa" ~ "PA",
+      party == "fn" ~ "FN",
+      party == "pad" ~ "PAD",
+      party == "confederation_of_the_greens" ~ "VERDES",
+      party == "ruiz_mateos_group" ~ "ARM",
+      party == "iu_lv" ~ "IU",
+      party == "galician_nationalist_bloc" ~ "AMAIUR",
+      party == "cc_n_ca" ~ "CC-CN",
+      party == "regionalist_party_of_cantabria" ~ "PRC",
+      party == "mas_pais" ~ "MP",
+      party == "cup" ~ "CUP",
+      party == "iu_u_pe_c" ~ "IU",
+      party == "upyd" ~ "UPD",
+      party == "eh_bildu" ~ "EH BILDU",
+      party == "cdc" ~ "CDC",
+      party == "compromis" ~ "COMPROMIS",
+      TRUE ~ as.character(party)  # Retains the original party name if not matched
+    ))
   
   return(raw_surveys)
 }
-
-# Example usage
-# Correct usage
-survey_data_1 <- get_survey_data(from = 1982, to = 1986, min_days_to = 3, select_parties = "psoe")
-print(head(survey_data_1))
-
-#EXAMPLES----
-##Correct usage----
-
-# Fetching Data from 1982 to 1986 with Minimum Days to Election
-survey_data_1 <- get_survey_data(from = 1982, to = 1986, min_days_to = 3)
-print(head(survey_data_1))
-
-# Fetching Data from 2000 to 2005 with Maximum Days to Election
-survey_data_2 <- get_survey_data(from = 2000, to = 2005, max_days_to = 100)
-print(head(survey_data_2))
-
-# Fetching Data from 1990 to 1995 without media
-survey_data_3 <- get_survey_data(from = 1990, to = 1995, include_media = FALSE)
-print(head(survey_data_3))
-
-# Fetching Data from 1982 to 2020 with Both Minimum and Maximum Days to Election
-survey_data_4 <- get_survey_data(from = 1982, to = 2020, min_days_to = 10, max_days_to = 200)
-print(head(survey_data_4))
-
-# Fetching Data from 1982 to 2020 with Specific Polling Firm
-survey_data_5 <- get_survey_data(from = 1982, to = 2020, select_polling_firm = "CIS")
-print(head(survey_data_5))
-
-# Fetching Data from 1982 to 2020 with Specific Media
-survey_data_6 <- get_survey_data(from = 1982, to = 2020, select_media = "El País")
-print(head(survey_data_6))
-
-# Fetching Data from 1982 to 2020 with Minimum Sample Size
-survey_data_7 <- get_survey_data(from = 1982, to = 2020, min_size = 1000)
-print(head(survey_data_7))
-
-# Fetching Data from 1982 to 2020 with Specific Parties
-survey_data_8 <- get_survey_data(from = 1982, to = 2020, select_parties = c("psoe", "pp"))
-print(head(survey_data_8))
-
-
-##Incorrect usage----
-
-# End Year Before Start Year
-# This should raise an error or warning
-# Reason: The 'to' year is earlier than the 'from' year, which is logically incorrect.
-# survey_data_9 <- get_survey_data(from = 1986, to = 1982)
-
-# Non-Numeric min_days_to Value
-# This should raise an error
-# Reason: The min_days_to parameter expects a numeric value, but a string is provided.
-# survey_data_10 <- get_survey_data(from = 1982, to = 2023, min_days_to = "three")
-
-# Fetching Data Beyond Available Date Range
-# This should raise an error or return an empty data frame
-# Reason: There are no survey data files available for the specified date range.
-# survey_data_11 <- get_survey_data(from = 1900, to = 1910)
-
-# Invalid Date Range with Future Dates
-# This should raise an error or warning
-# Reason: The specified date range includes future years for which no survey data files exist.
-# survey_data_12 <- get_survey_data(from = 2025, to = 2030)
 

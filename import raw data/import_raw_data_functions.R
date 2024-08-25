@@ -1,4 +1,3 @@
-# Load required libraries
 #check, install if necessary, and load the required packages
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(dplyr, glue, readr, stringr, tibble, tidyr, purr, lubridate)

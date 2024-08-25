@@ -1,0 +1,29 @@
+---
+title: "Literature Review"
+author: "Mikaela De Smedt"
+format: 
+  html:
+    wordcount: true
+bibliography: references.bib
+csl: apa-6th-edition.csl
+---
+
+## Existing Solutions
+
+The mission to make electoral data more available is not a new one. There are other projects, studies and packages that all follow the same mission, which only serves to reassure the relevance of this task. A first example would be The Eurpean NUTS-level election dataset. This project streams from the problematic that election results in Europe often do not match regional statistics, an issue that trumps the possibility for cross-national research [@Schraff2022]. Whilst different from `pollspain` in the end product and the scope, this project is an excellent example of the difficulties that lie in electoral research.
+
+Closer to the approach and scope – in that it also covers national level elections, not that it also does so for Spain – we find the `electionsBR` package. This tool allows users to download and process electoral data for Brazil through a wide range of elections. Its functions provide easy access to data on candidates and election results, making the access to this figures easy and accessible [@electionsBR]. It's impact on political participacion in Brazil cannot itself be monitored, buts its 43 thousand downloads from CRAN certainly attest to the use it is being given by people in the R community.
+
+Lastly, identical in scope but entirely different in its approach, we find the SEA database. Introduces by Perez, Aybar and Pavia in 2021 this project represents a significant advancement in the centralization and accessibility of electoral data in Spain. The SEA database offers the most comprehensive repository of Spanish election outcomes available, covering General, Regional, Local, and European Parliamentary elections from the late 1970 until 2021 [@perez2021]. SEA's approach to data organization and homogenization is a key feature, as it converts electoral data into a more accessible format.
+
+## Gap Analysis
+
+The solutions mentioned above certainly evidence a pioneering effort to make electoral data more accessible to the public, however The European NUTS-level election dataset and `electionsBR` cannot quite be compared as they have a different scope thanthe one `pollspain` aims for. Certainly if one wanted to focus on Spanish electoral analysis our choices would be limited to A. downloading the data from its various sources, converting it to the formats we need and cleaning the data ourselves before we can use it; B. Using The SEA database to access the files; or C. Using `pollspain` to access and an use the data for our analysis.
+
+The first option would actually require a lot of work. The ministry of the interior publishes official election data in .DAT file formats along with an extensive document listing the specifications to import said data. Whilst the download of this files is easily done through the ministry's download area portal understanding the file structure of what we download requires more work. Each election download includes 12 .DAT files each accounting for different pieces of the data. Those of interest are the 03xxyymm.DAT file, from which information on the candidacies; the 05xxyymm.DAT file, with information on the spatial identifiers of municipalities (codes and names); the 09xxyymm.DAT file, which contains poll station data and the 10xxyymm.DAT with ballots per candidacy.
+
+Certainly, not much consideration is needed to discard the first option once we hear of the other two. However there are some limitations in the SEA database that `pollspain` does address.
+
+First of all, access. The SEA database is accessible through the Harvard database repository. Its 974 excel file and compressed versions are extremely comprehensive... but can be heavy and slow to process. Not mention data sets are organized by elecelection type and year which means accessing data for each election we desire would require its individual download. This brings us to the second point, accessibility. Whilst this solution does address the matter of not having to convert the data, the process required to access them then requires the user to merge files and load different sheets in order to make the files compatible with the desired software for its analysis, leaving this to the user's own expertise. Lastly, the aspect of efficiency must also be considered. This option does not offer the possibility of accessing only census or candidacies data from the election in question which means the user must always download data they do not require in order to conduct their analysis.
+
+The `pollspain` package seeks to overcome these barriers by providing functions that simplify the data retrieval process. Data from the package comes processed to facilitate its loading onto the R environment and its functions allow the user to select the level of granularity they wish the data to retain – whether they be interested in the poll station or CCAA level. With this, no file needs to be saved onto the user's directory unless they wish to do so. No data besides the one requested is downloaded  thereby reducing the computational load and storage requirements. This contrasts with SEA, where users might need to download large data sets that include more information than necessary for their specific analysis.

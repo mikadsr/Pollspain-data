@@ -1,10 +1,8 @@
-library(dplyr)
-library(rvest)
-library(glue)
-library(lubridate)
-library(janitor)
-library(stringr)
-library(readr)
+#check, install if necessary, and load the required packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, rvest, glue, lubridate, janitor, stringr, readr)
+###########################################################
+
 
 # GET LINKS -----
 ##Generate the historical_survey_links_wikipedia tibble ----

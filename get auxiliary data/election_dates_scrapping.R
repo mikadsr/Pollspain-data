@@ -1,8 +1,7 @@
-
-library(rvest)
-library(dplyr)
-library(tidyverse)
-library(lubridate)
+# Check if necessary packages are installed and load them
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(rvest, dplyr, tidyverse, lubridate)
+###########################################################
 
 # Define the URL and read the webpage
 url <- "https://es.wikipedia.org/wiki/Anexo:Elecciones_en_Espa%C3%B1a"
@@ -18,9 +17,6 @@ general_elections <- tables[[13]]
 ccaa_elections <- tables[[14]]
 municipal_elections <- tables[[15]]
 
-
-library(dplyr)
-library(lubridate)
 
 # Function to convert "1976 15 de diciembre" to "DD/MM/YYYY"
 convert_spanish_date <- function(date_string) {

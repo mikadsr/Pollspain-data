@@ -50,21 +50,44 @@
 #' @import crayon
 #' @examples
 #'
-#' ## Example usage to combine data from different elections into one table
-#' data("dates_elections_spain")
-#' \dontrun{
-#' # Fetching data for multiple elections
-#' type_elec_vec <- c("congress", "congress", "congress")
-#' year_vec <- c(2019, 2019, 2016)
-#' month_vec <- c(11, 4, 6)
+#' ## Correct examples ----
 #'
-#' combined_mun_census_data <- get_mun_census_data(type_elec_vec, year_vec, month_vec)
+#' # Congress elections in April 2019
+#' # Fetch municipal census data for the congress elections in April 2019
+#' mun_census_data1 <- get_mun_census_data("congress", 2019, 4)
 #'
-#' # Fetching data for a single election
-#' mun_census_data <- get_mun_census_data("congress", 2019, 4)
-#' }
+#' # Senate elections in April 2019
+#' # Fetch municipal census data for the senate elections in April 2019
+#' mun_census_data2 <- get_mun_census_data("senate", 2019, 4)
+#'
+#' # Example usage to combine data from different elections into one table
+#' # Fetch municipal census data for congress elections in Nov 2019, April 2019, and June 2016
+#' combined_mun_census_data <- get_mun_census_data(
+#'   c("congress", "congress", "congress"), 
+#'   c(2019, 2019, 2016), 
+#'   c(11, 4, 6)
+#' )
+#'
+#' ## Incorrect examples ----
+#'
+#' # Invalid election type
+#' # This will fail because "national" is not a valid election type
+#' mun_census_data5 <- get_mun_census_data("national", 2019, 4) 
+#'
+#' # Length mismatch between year and month vectors
+#' # This will fail because the length of the year and month vectors do not match
+#' mun_census_data6 <- get_mun_census_data("congress", 2016, c(4, 11)) 
+#'
+#' # Invalid date format
+#' # This will fail because the date should be split into year and month
+#' mun_census_data7 <- get_mun_census_data("congress", "2016-06-26") 
+#'
+#' # Non-existent election data
+#' # This will fail because 1990 congress elections are not available
+#' mun_census_data8 <- get_mun_census_data("congress", 1990, 4) 
 #'
 #' @export
+
 
 get_mun_census_data <- function(type_elec, year, month) {
   # Ensure input parameters are vectors
@@ -111,8 +134,6 @@ get_mun_census_data <- function(type_elec, year, month) {
       df_name <- ls(temp_env)
       mun_data <- get(df_name, envir = temp_env)
       
-      # Debug: Print some basic information about the loaded data
-      print(head(mun_data))
       
       # Join MIR and INE information
       mun_data <- mun_data %>%
@@ -161,6 +182,12 @@ get_mun_census_data <- function(type_elec, year, month) {
 #' \item{turnout,porc_valid,porc_invalid,porc_parties,porc_blank}{Various turnout and percentage metrics.}
 #' \item{pop_res_mun}{Population residing in the municipality.}
 #'
+#' @details
+#' This function fetches poll station-level data for the specified elections by downloading
+#' the corresponding `.rda` files from GitHub and processing them into a tidy format.
+#' It automatically handles the download, loading, and merging of data across multiple
+#' election periods as specified by the user.
+#'
 #' @examples
 #'
 #' ## Correct examples
@@ -192,7 +219,7 @@ get_mun_census_data <- function(type_elec, year, month) {
 #' Mikaela DeSmedt, Javier Álvarez-Liébana
 #'
 #' @export
-#'
+
 
 get_poll_station_data <- function(type_elec, year, month, prec_round = 3) {
   # Ensure the inputs are vectors of the same length
@@ -305,36 +332,51 @@ get_poll_station_data <- function(type_elec, year, month, prec_round = 3) {
 #' @title Get candidates data
 #'
 #' @description Fetch and process candidates data for Spanish elections.
+#' This function retrieves and processes candidate data specifically for congress elections in Spain. The function fetches raw data from the Pollspain Data Repository, processes it, and returns a detailed data frame containing information about candidates in the specified election(s).
 #'
 #' @inheritParams get_mun_census_data
 #'
-#' @return A data frame containing the candidates data.
-#'
-#' @author ...
-#' @source Data extracted from \href{https://github.com/mikadsr/Pollspain-data}{Pollspain Data Repository}
-#' @keywords get_elections_data
-#' @name get_candidates_data
+#' @return A tibble containing the candidates data with the following columns:
+#' \item{cod_elec}{Code representing the type of election: \code{"01"} (referendum),
+#' \code{"02"} (congress), \code{"03"} (senate), \code{"04"} (local elections),
+#' \code{"06"} (cabildo - Canarian council - elections), \code{"07"}
+#' (European Parliament elections).}
+#' \item{type_elec}{Type of election.}
+#' \item{date_elec}{Date of the election.}
+#' \item{id_INE_mun}{Municipality ID constructed from the ccaa-prov-mun codes provided
+#' by INE.}
+#' \item{id_MIR_mun}{Municipality ID constructed from the ccaa-prov-mun codes provided
+#' by the Spanish Ministry of Interior (MIR).}
+#' \item{cod_INE_ccaa, cod_MIR_ccaa, ccaa}{Codes and names for regions (ccaa)
+#' to which the municipalities belong.}
+#' \item{cod_INE_prov, prov}{Codes and names for the provinces to which the municipalities belong.}
+#' \item{cod_INE_mun, mun}{Code, and name for
+#' municipalities.}
+#' \item{candidacies}{Data related to the individual candidacies, including party affiliation and candidate information.}
 #'
 #' @examples
 #'
-#' ## Get candidates data
-#'
-#' # Right examples
-#' \dontrun{
+#' ## Correct examples
 #' # Get candidates data for congress elections in March 1996
-#' candidates_data <- get_candidates_data("congress", 1996, 3)
-#' }
+#' candidates_data_1996_03 <- get_candidates_data("congress", 1996, 3)
+#' print(candidates_data_1996_03)
 #'
-#' # Wrong examples
-#' \dontrun{
+#' # Get candidates data for congress elections in April 2019
+#' candidates_data_2019_04 <- get_candidates_data("congress", 2019, 4)
+#' print(candidates_data_2019_04)
+#'
+#' ## Wrong examples
 #' # Trying to get candidates data for non-congress elections
-#' candidates_data <- get_candidates_data("senate", 1996, 3)
-#' }
+#' try(get_candidates_data("senate", 1996, 3))
 #'
+#' # Trying to get candidates data for non-existent elections
+#' try(get_candidates_data("congress", 1800, 1))
+#'
+#' @author Mikaela DeSmedt, Javier Álvarez-Liébana
+#' @source Data extracted from \href{https://github.com/mikadsr/Pollspain-data}{Pollspain Data Repository}
+#' @keywords get_elections_data
+#' @name get_candidates_data
 #' @export
-# Function to read and import .rda files instead of .csv files
-# Function to read and import .rda files instead of .csv files
-# Function to read and import .rda files instead of .csv files
 get_candidates_data <- function(type_elec, year, month) {
   # At this time, just congress election
   if (type_elec != "congress") {
@@ -373,24 +415,17 @@ get_candidates_data <- function(type_elec, year, month) {
     stop("Failed to fetch or read candidates data from the specified URL.")
   })
   
-  # Debug: Check the structure of the loaded data
-  print("Structure of loaded data:")
-  str(candidates_data)
   
   # Convert date_elec to Date format (YYYY-MM-DD)
   candidates_data <- candidates_data %>%
     mutate(date_elec = ymd(date_elec))   # Ensure date_elec is in Date format
   
-  # Debug: Check the structure of the processed data
-  print("Structure of processed data:")
-  str(candidates_data)
   
   # Output
   return(candidates_data)
 }
 
-
-##' @title Get candidacies data
+##' @title Get Candidacies Data
 ##'
 ##' @description Fetch and process candidacies data for Spanish elections. This function supports fetching data for multiple elections simultaneously by accepting vector inputs for the election parameters.
 ##'
@@ -501,9 +536,7 @@ get_candidacies_data <- function(type_elec, year, month, include_candidates = FA
         rename(candidate_full_name = candidate_full_name,
                candidate_order = order_number,
                candidate_type = candidate_type,
-               candidate_sex = candidate_sex,
-               candidate_elected = candidate_elected,
-               candidate_id_card = candidate_id_card)
+               candidate_sex = candidate_sex)
       
     } else {
       candidacies_data <- candidacies_files
@@ -519,10 +552,9 @@ get_candidacies_data <- function(type_elec, year, month, include_candidates = FA
   return(combined_candidacies_data)
 }
 
-
-#' @title Get CERA data (at poll station level)
+#' @title Get CERA Data (at Poll Station Level)
 #'
-#' @description This function aggregates CERA (Census of Absent Residents) data from election data, based on a specified hierarchical level.
+#' @description This function aggregates CERA (Census of Absent Residents) data from election data based on a specified hierarchical level. The function processes election data to provide aggregated statistics such as census counts, total ballots, and turnout percentages.
 #'
 #' @inheritParams get_mun_census_data
 #' @param election_data A data frame containing the election data to be processed.
@@ -533,39 +565,45 @@ get_candidacies_data <- function(type_elec, year, month, include_candidates = FA
 #'
 #' @return A data frame with the aggregated CERA data, including columns for type of election, election date, census data, total ballots, and turnout percentages.
 #'
-#' @authors Mikaela DeSmedt(documentation), Javier Álvarez-Liébana.
+#' @examples
+#'
+#' ## Correct Examples
+#'
+#' # Fetch CERA data aggregated at the municipal level
+#' cera_data_mun <- get_CERA_data(poll_station_data1, 
+#'                                id_col = "id_INE_poll_station", 
+#'                                level = "mun")
+#' print(cera_data_mun)
+#'
+#' # Fetch CERA data aggregated at the provincial level
+#' cera_data_prov <- get_CERA_data(poll_station_data1, 
+#'                                 id_col = "id_INE_poll_station", 
+#'                                 level = "prov")
+#' print(cera_data_prov)
+#'
+#' ## Incorrect Examples
+#'
+#' # Attempt to fetch CERA data with a non-existent id column, should raise an error
+#' \dontrun{
+#' cera_data_invalid_col <- get_CERA_data(poll_station_data1, 
+#'                                        id_col = "non_existent_column", 
+#'                                        level = "mun")
+#' }
+#'
+#' # Attempt to fetch CERA data with an invalid aggregation level, should raise an error
+#' \dontrun{
+#' cera_data_invalid_level <- get_CERA_data(poll_station_data1, 
+#'                                          id_col = "id_INE_poll_station", 
+#'                                          level = "barrio")
+#' }
+#'
+#' @authors Mikaela DeSmedt (documentation), Javier Álvarez-Liébana.
 #' 
 #' @source Data extracted and processed from various election sources.
 #' 
 #' @keywords get_elections_data
 #' 
 #' @name get_CERA_data
-#'
-#' @examples
-#'
-#' ## Get CERA data
-#'
-#' # Example with proper arguments
-#' \dontrun{
-#' election_data <- data.frame(
-#'   id_INE_poll_station = c("999-123-456-789", "999-987-654-321"),
-#'   type_elec = c("congress", "congress"),
-#'   date_elec = as.Date(c("2023-06-28", "2023-06-28")),
-#'   census_counting = c(1000, 1500),
-#'   total_ballots = c(800, 1200)
-#' )
-#' get_CERA_data(election_data, id_col = "id_INE_poll_station", level = "mun")
-#' }
-#'
-#' # Multiple elections
-#' combined_CERA_data <- get_CERA_data(election_data,
-#'                                     id_col = "id_INE_poll_station",
-#'                                     level = "prov")
-#'
-#' # Wrong examples
-#' \dontrun{
-#' get_CERA_data(election_data, id_col = "non_existent_column", level = "invalid_level")
-#' }
 #'
 #' @export
 get_CERA_data <- function(election_data, id_col = "id_INE_poll_station",
@@ -607,18 +645,14 @@ get_CERA_data <- function(election_data, id_col = "id_INE_poll_station",
 
 #' @title Get Candidacy Ballot Data
 #'
-#' This function fetches and combines data on ballots cast for each candidacy in a specified election. 
-#' It optionally includes the names of the candidacies. The data is retrieved from a specified GitHub 
-#' repository containing Spanish election data.
+#' @description This function fetches and combines data on ballots cast for each candidacy in a specified election. It optionally includes the names of the candidacies. The data is retrieved from a specified GitHub repository containing Spanish election data.
 #'
 #' @param type_elec Character vector. Specifies the type of election, either "congress" or "senate".
 #' @param year Integer vector. Specifies the year(s) of the election(s).
 #' @param month Integer vector. Specifies the month(s) of the election(s). The month should be in two digits (e.g., 03 for March).
-#' @param include_candidacy_names Logical. If TRUE, the function will include the names of the candidacies by fetching additional data. 
-#'                                Default is TRUE.
+#' @param include_candidacy_names Logical. If TRUE, the function will include the names of the candidacies by fetching additional data. Default is TRUE.
 #'
-#' @return A tibble containing the combined ballot data and, if requested, the names of the candidacies.
-#'         The tibble includes the following columns (depending on the availability of data):
+#' @return A tibble containing the combined ballot data and, if requested, the names of the candidacies. The tibble includes the following columns (depending on the availability of data):
 #'         - `cod_elec`: Election code
 #'         - `type_elec`: Type of election
 #'         - `date_elec`: Date of the election
@@ -636,18 +670,41 @@ get_CERA_data <- function(election_data, id_col = "id_INE_poll_station",
 #'         - `name_candidacies`: Full name of the candidacies (if `include_candidacy_names` is TRUE)
 #'
 #' @details
-#' The function retrieves data from a specified GitHub repository containing raw data files for Spanish 
-#' congressional and senatorial elections. The function merges the ballots data with the candidacy names data 
-#' if the `include_candidacy_names` parameter is set to TRUE. It ensures that no duplicate columns are retained 
-#' in the final output.
+#' The function retrieves data from a specified GitHub repository containing raw data files for Spanish congressional and senatorial elections. The function merges the ballots data with the candidacy names data if the `include_candidacy_names` parameter is set to TRUE. It ensures that no duplicate columns are retained in the final output.
 #'
 #' @examples
+#' # Correct Use Cases
+#'
 #' # Fetch ballots data for the 2004 congressional election in March, including candidacy names
 #' ballots_data <- get_candidacy_ballot_data("congress", 2004, 03)
+#' print(ballots_data)
 #'
 #' # Fetch ballots data for the 2023 congressional election in July, excluding candidacy names
 #' ballots_data <- get_candidacy_ballot_data("congress", 2023, 07, include_candidacy_names = FALSE)
+#' print(ballots_data)
 #'
+#' # Incorrect Use Cases
+#'
+#' # Attempt to fetch ballots data with an invalid election type
+#' \dontrun{
+#' ballots_data <- get_candidacy_ballot_data("parliament", 2023, 07)
+#' }
+#' # This will raise an error because "parliament" is not a valid election type. The function only accepts "congress" or "senate".
+#'
+#' # Attempt to fetch ballots data with an invalid month format
+#' \dontrun{
+#' ballots_data <- get_candidacy_ballot_data("congress", 2023, 13)
+#' }
+#' # This will raise an error or produce unexpected results because "13" is not a valid month. Months should be in two-digit format (e.g., 01 for January).
+#'
+#' # Attempt to fetch ballots data with an invalid year format
+#' \dontrun{
+#' ballots_data <- get_candidacy_ballot_data("senate", 2023.5, 07)
+#' }
+#' # This will raise an error because the year should be an integer, not a decimal.
+#'
+#' @authors Mikaela DeSmedt, Javier Álvarez-Liébana
+#' 
 #' @export
 
 get_candidacy_ballot_data <- function(type_elec, year, month, include_candidacy_names = TRUE) {
@@ -732,8 +789,7 @@ get_candidacy_ballot_data <- function(type_elec, year, month, include_candidacy_
   return(combined_ballots_data)
 }
 
-
-#' @title aggregate_election_data
+#' @title Aggregate Election Data
 #'
 #' @description This function aggregates election data at various hierarchical levels based on geographic scope and candidacy. It allows summarizing ballots by different levels such as Autonomous Communities (CCAA), Provinces, and Municipalities, while retaining key election information.
 #'
@@ -755,10 +811,10 @@ get_candidacy_ballot_data <- function(type_elec, year, month, include_candidacy_
 #'
 #' @examples
 #'
-#' ## Aggregate election data by province and candidacy
+#' ## Correct examples ----
 #'
-#' \dontrun{
-#' ballots_data <- data.frame( # Add appropriate data frame here
+#' # Aggregate election data by province and candidacy
+#' ballots_data <- data.frame(
 #'   cod_elec = "02",
 #'   type_elec = "congress",
 #'   date_elec = as.Date("2023-07-23"),
@@ -771,11 +827,31 @@ get_candidacy_ballot_data <- function(type_elec, year, month, include_candidacy_
 #'   name_candidacies = "Partido Socialista Obrero Español",
 #'   ballots = 500
 #' )
-#' 
-#' aggregate_election_data(ballots_data, scope = "prov")
-#' }
+#' aggregated_data <- aggregate_election_data(ballots_data, scope = "prov")
+#' print(aggregated_data)
+#'
+#' # Aggregate election data by Autonomous Community without candidacy names
+#' aggregated_data_ccaa <- aggregate_election_data(ballots_data, scope = "ccaa", group_by_candidacy = FALSE)
+#' print(aggregated_data_ccaa)
+#'
+#' ## Incorrect examples ----
+#'
+#' # Attempt to aggregate data with an invalid scope argument
+#' aggregated_data_invalid <- aggregate_election_data(ballots_data, scope = "region")
+#' # This will raise an error because "region" is not a valid scope
+#'
+#' # Attempt to aggregate data with missing required columns
+#' incomplete_ballots_data <- data.frame(
+#'   cod_elec = "02",
+#'   type_elec = "congress",
+#'   date_elec = as.Date("2023-07-23"),
+#'   ballots = 500
+#' )
+#' aggregated_data_missing <- aggregate_election_data(incomplete_ballots_data, scope = "mun")
+#' # This will fail or produce incorrect results due to missing required columns
 #'
 #' @export
+
 
 aggregate_election_data <- function(ballots_data, 
                                     scope = c("ccaa", "prov", "mun"), 

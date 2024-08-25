@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Mikaela De Smedt">
+
+<title>04-Functionalities</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="04-Functionalities_files/libs/clipboard/clipboard.min.js"></script>
+<script src="04-Functionalities_files/libs/quarto-html/quarto.js"></script>
+<script src="04-Functionalities_files/libs/quarto-html/popper.min.js"></script>
+<script src="04-Functionalities_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="04-Functionalities_files/libs/quarto-html/anchor.min.js"></script>
+<link href="04-Functionalities_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="04-Functionalities_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="04-Functionalities_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="04-Functionalities_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="04-Functionalities_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">04-Functionalities</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Mikaela De Smedt </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>In alignment with the package’s objective, the functions that compose it revolve around 3 main functionalities: utility functions that support the core operations of the package, functions that retrieve and process election data, and functions that allow us to use this data.</p>
+<section id="utility-functions" class="level2">
+<h2 class="anchored" data-anchor-id="utility-functions">Utility functions</h2>
+<p>These are functions that ensure the correct working of the package. They may also be used by users to further analysis of their own. They work by handling data cleaning, standardization and format conversion.</p>
+<section id="re-coding-parties-recod_parties" class="level3">
+<h3 class="anchored" data-anchor-id="re-coding-parties-recod_parties">Re coding parties <code>recod_parties</code></h3>
+<p>This function re codes the names of candidacies and their abbreviations to make sure any aggregated analysis remains robust regardless of the naming variations candidacies. These variations are due to language variations across the Spanish territory and character variations from one candidacy inscription to another. The dictionary used for this codification was manually sourced by tracing the names and abbreviations of parties having achieved seats in the Spanish congress since 1982.</p>
+<ul>
+<li><strong>Inputs</strong>: A data frame with party names and abbreviations.</li>
+<li><strong>Outputs</strong>: A cleaned data frame with standardized party names and abbreviations.</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">recod_parties</span>(party_data, <span class="at">col_name_abbrev =</span> <span class="st">"abbrev"</span>, <span class="at">col_name_candidacies =</span> <span class="st">"full_name"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p><code>parties_data</code>: A data frame containing political party data with columns for party abbreviations and full names.</p>
+<p><code>col_name_abbrev</code>: A character string specifying the column name for party abbreviations in the input data frame. Defaults to “abbrev_candidacies”.</p>
+<p><code>col_name_candidacies</code>: A character string specifying the column name for party full names in the input data frame. Defaults to “name_candidacies”.</p>
+</blockquote>
+</section>
+<section id="extracting-regional-codes-extract_code" class="level3">
+<h3 class="anchored" data-anchor-id="extracting-regional-codes-extract_code">Extracting regional codes <code>extract_code</code></h3>
+<p>This function extracts specific regional codes from standard poll station identifiers from the ministry of the interior data. This retrieves codes corresponding to different levels of geographical aggregations from poll station IDs.</p>
+<ul>
+<li><strong>Inputs</strong>: A poll station identifier and the desired level of geographic aggregation.</li>
+<li><strong>Outputs</strong>: A vector containing the extracted codes.</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">extract_code</span>(id_INE_poll_station, <span class="at">level =</span> <span class="st">"mun"</span>, <span class="at">full_cod =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p><code>id_INE_poll_station</code>: poll station code. It should be a string vector with tokens between 18 and 19 characters with 5 ‘-’ according to the INE/MIR format”).</p>
+<p><code>level</code>: aggregation level, for which we want to extract codes. It should be taken from the following values: ‘ccaa’, ‘prov’, ‘mun’, ‘mun-district’, ‘sec’ or ‘poll-station’</p>
+<p><code>full_cod</code>: flag to indicate if codes should be provided in a full format (including codes of more aggregated levels) or not. Defaults to <code>FALSE</code>.</p>
+</blockquote>
+</section>
+<section id="extracting-election-codes-type_to_code_election" class="level3">
+<h3 class="anchored" data-anchor-id="extracting-election-codes-type_to_code_election">Extracting election codes <code>type_to_code_election</code></h3>
+<p>This function maps election types to their corresponding codes used by the Spanish Ministry of the Interior. It ensures that the correct data sets are accessed for the election type defined by the user. Although the package only supports congress and senate elections at the moment, this function accepts all election types stated by the official source.</p>
+<ul>
+<li><strong>Inputs</strong>: A string indicating the type of election.</li>
+<li><strong>Outputs</strong>: A string with the corresponding election code.</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">type_to_code_election</span>(<span class="at">type_elec =</span> <span class="st">"congress"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<blockquote class="blockquote">
+<p><code>type_elec</code> type elections for which data is available. It should be one of the following values: “referendum”, “congress”, “senate”, “local”, “cabildo” (Canarian council) or “EU”.</p>
+</blockquote>
+</section>
+</section>
+<section id="data-retrieval-functions" class="level2">
+<h2 class="anchored" data-anchor-id="data-retrieval-functions">Data retrieval functions</h2>
+<p>These functions are designed to fetch <code>.rda</code> files from the <a href="https://github.com/mikadsr/Pollspain-data">Pollspain-data</a> <span class="citation" data-cites="pollspain2024">(<a href="#ref-pollspain2024" role="doc-biblioref">DeSmedt, 2024</a>)</span> repository. They work by matching the type of election, year and month provided to the corresponding directory within the repository.</p>
+<section id="get-election-data" class="level3">
+<h3 class="anchored" data-anchor-id="get-election-data">Get election data</h3>
+<p>These are 6 functions that allow us to access different data sets from a corresponding election. The functions support retrieving data for both single and multiple elections. Unless specified otherwise the following arguments are always present in these functions:</p>
+<blockquote class="blockquote">
+<p><code>type_elec</code>: A vector or single value representing the types of elections.</p>
+<p><code>year</code>: A vector or single value representing the years of the elections to be considered.</p>
+<p><code>month</code>: A vector or single value representing the months of the elections to be considered.</p>
+</blockquote>
+<section id="get_mun_census_data" class="level4">
+<h4 class="anchored" data-anchor-id="get_mun_census_data"><code>get_mun_census_data</code></h4>
+<p>Retrieves municipal-level census data for specific elections in Spain</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>mun_census_data <span class="ot">&lt;-</span> <span class="fu">get_mun_census_data</span>(<span class="st">"congress"</span>, <span class="dv">2023</span>, <span class="dv">7</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>tibble [8,131 × 22] (S3: tbl_df/tbl/data.frame)
+ $ cod_elec            : chr [1:8131] "02" "02" "02" "02" ...
+ $ type_elec           : chr [1:8131] "congress" "congress" "congress" "congress" ...
+ $ date_elec           : Date[1:8131], format: "2023-07-23" "2023-07-23" ...
+ $ year                : num [1:8131] 2023 2023 2023 2023 2023 ...
+ $ month               : num [1:8131] 7 7 7 7 7 7 7 7 7 7 ...
+ $ id_INE_mun          : 'glue' chr [1:8131] "01-04-001" "01-04-002" "01-04-003" "01-04-004" ...
+ $ id_MIR_mun          : 'glue' chr [1:8131] "01-04-001" "01-04-002" "01-04-003" "01-04-004" ...
+ $ cod_INE_ccaa        : chr [1:8131] "01" "01" "01" "01" ...
+ $ cod_MIR_ccaa        : chr [1:8131] "01" "01" "01" "01" ...
+ $ ccaa                : chr [1:8131] "Andalucía" "Andalucía" "Andalucía" "Andalucía" ...
+ $ cod_INE_prov        : chr [1:8131] "04" "04" "04" "04" ...
+ $ prov                : chr [1:8131] "Almería" "Almería" "Almería" "Almería" ...
+ $ cod_INE_mun         : chr [1:8131] "001" "002" "003" "004" ...
+ $ mun                 : chr [1:8131] "Abla" "Abrucena" "Adra" "Albanchez" ...
+ $ cod_mun_jud_district: chr [1:8131] "013" "013" "029" "053" ...
+ $ cod_mun_prov_council: chr [1:8131] "013" "013" "029" "053" ...
+ $ n_poll_stations     : num [1:8131] 2 2 29 1 1 13 1 2 1 1 ...
+ $ pop_res_mun         : num [1:8131] 1247 1221 25300 735 615 ...
+ $ census_INE_mun      : num [1:8131] 995 1034 17557 387 504 ...
+ $ census_counting_mun : num [1:8131] 995 1034 17557 387 504 ...
+ $ census_CERE_mun     : num [1:8131] 0 0 0 0 0 0 0 0 0 0 ...
+ $ day                 : int [1:8131] 20 20 20 20 20 20 20 20 20 20 ...</code></pre>
+</div>
+</div>
+</section>
+<section id="get_poll_station_data" class="level4">
+<h4 class="anchored" data-anchor-id="get_poll_station_data"><code>get_poll_station_data</code></h4>
+<p>Retrieves detailed data for individual polling stations for specified elections.</p>
+<blockquote class="blockquote">
+<p><code>prec_round</code>: Number of decimal places to round percentage values to (default is 3).</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>poll_station_data <span class="ot">&lt;-</span> <span class="fu">get_poll_station_data</span>(<span class="st">"congress"</span>, <span class="dv">2023</span>, <span class="dv">7</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>tibble [60,366 × 23] (S3: tbl_df/tbl/data.frame)
+ $ id_elec            : 'glue' chr [1:60366] "02-2023-07-23" "02-2023-07-23" "02-2023-07-23" "02-2023-07-23" ...
+ $ type_elec          : chr [1:60366] "congress" "congress" "congress" "congress" ...
+ $ date_elec          : Date[1:60366], format: "2023-07-23" "2023-07-23" ...
+ $ id_INE_poll_station: 'glue' chr [1:60366] "01-04-001-01-001-A" "01-04-001-01-001-B" "01-04-002-01-001-A" "01-04-002-01-001-B" ...
+ $ ccaa               : chr [1:60366] "Andalucía" "Andalucía" "Andalucía" "Andalucía" ...
+ $ prov               : chr [1:60366] "Almería" "Almería" "Almería" "Almería" ...
+ $ mun                : chr [1:60366] "Abla" "Abla" "Abrucena" "Abrucena" ...
+ $ census_counting    : num [1:60366] 429 566 445 589 627 607 691 770 852 643 ...
+ $ ballots_1          : num [1:60366] 187 239 193 259 299 279 285 334 380 251 ...
+ $ turnout_1          : num [1:60366] 43.6 42.2 43.4 44 47.7 ...
+ $ ballots_2          : num [1:60366] 249 315 249 325 388 378 373 432 484 327 ...
+ $ turnout_2          : num [1:60366] 58 55.7 56 55.2 61.9 ...
+ $ blank_ballots      : num [1:60366] 1 3 1 2 3 6 1 2 3 7 ...
+ $ invalid_ballots    : num [1:60366] 2 4 3 3 6 6 1 6 7 5 ...
+ $ party_ballots      : num [1:60366] 328 409 340 438 469 450 499 515 577 400 ...
+ $ valid_ballots      : num [1:60366] 329 412 341 440 472 456 500 517 580 407 ...
+ $ total_ballots      : num [1:60366] 331 416 344 443 478 462 501 523 587 412 ...
+ $ turnout            : num [1:60366] 77.2 73.5 77.3 75.2 76.2 ...
+ $ porc_valid         : num [1:60366] 99.4 99 99.1 99.3 98.7 ...
+ $ porc_invalid       : num [1:60366] 0.604 0.962 0.872 0.677 1.255 ...
+ $ porc_parties       : num [1:60366] 99.7 99.3 99.7 99.5 99.4 ...
+ $ porc_blank         : num [1:60366] 0.304 0.728 0.293 0.455 0.636 ...
+ $ pop_res_mun        : num [1:60366] 1247 1247 1221 1221 25300 ...</code></pre>
+</div>
+</div>
+</section>
+<section id="get_candidates_data" class="level4">
+<h4 class="anchored" data-anchor-id="get_candidates_data"><code>get_candidates_data</code></h4>
+<p>Retrieves detailed information about candidates who participated in specified elections, including their names, gender, and ballot order.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>candidates_data <span class="ot">&lt;-</span> <span class="fu">get_candidates_data</span>(<span class="st">"congress"</span>, <span class="dv">2023</span>, <span class="dv">7</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>tibble [5,099 × 12] (S3: tbl_df/tbl/data.frame)
+ $ cod_elec           : chr [1:5099] "02" "02" "02" "02" ...
+ $ round_number       : chr [1:5099] "1" "1" "1" "1" ...
+ $ province_code      : chr [1:5099] "01" "01" "01" "01" ...
+ $ district_code      : chr [1:5099] "9" "9" "9" "9" ...
+ $ municipality_code  : chr [1:5099] "999" "999" "999" "999" ...
+ $ id_candidacies     : chr [1:5099] "000001" "000001" "000001" "000001" ...
+ $ order_number       : chr [1:5099] "001" "002" "003" "004" ...
+ $ candidate_type     : chr [1:5099] "T" "T" "T" "T" ...
+ $ candidate_full_name: chr [1:5099] "Leire Orbañanos Martínez" "Iker Ruiz Basoco" "Aitor Menayo Hurtado" "Carolina Cruz Montesinos" ...
+ $ candidate_sex      : chr [1:5099] "female" "male" "male" "female" ...
+ $ type_elec          : chr [1:5099] "congress" "congress" "congress" "congress" ...
+ $ date_elec          : Date[1:5099], format: "2023-07-23" "2023-07-23" ...</code></pre>
+</div>
+</div>
+</section>
+<section id="get_candidacies_data" class="level4">
+<h4 class="anchored" data-anchor-id="get_candidacies_data"><code>get_candidacies_data</code></h4>
+<p>Retrieves candidacies data, allowing the option to include candidate details or not.</p>
+<blockquote class="blockquote">
+<p><code>include_candidates</code> Logical flag indicating whether to include detailed candidates data. Default is FALSE.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>candidates_data_with_details <span class="ot">&lt;-</span> <span class="fu">get_candidacies_data</span>(<span class="st">"congress"</span>,</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                                     <span class="dv">2023</span>, </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                                                     <span class="dv">7</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                                                     <span class="at">include_candidates =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>tibble [5,099 × 17] (S3: tbl_df/tbl/data.frame)
+ $ cod_elec            : chr [1:5099] "02" "02" "02" "02" ...
+ $ type_elec           : chr [1:5099] "congress" "congress" "congress" "congress" ...
+ $ date_elec           : Date[1:5099], format: "2023-07-23" "2023-07-23" ...
+ $ id_candidacies      : chr [1:5099] "000001" "000001" "000001" "000001" ...
+ $ abbrev_candidacies  : chr [1:5099] "FO" "FO" "FO" "FO" ...
+ $ name_candidacies    : chr [1:5099] "FRENTE OBRERO" "FRENTE OBRERO" "FRENTE OBRERO" "FRENTE OBRERO" ...
+ $ cod_candidacies_prov: chr [1:5099] "000001" "000001" "000001" "000001" ...
+ $ cod_candidacies_ccaa: chr [1:5099] "000001" "000001" "000001" "000001" ...
+ $ cod_candidacies_nat : chr [1:5099] "000001" "000001" "000001" "000001" ...
+ $ round_number        : chr [1:5099] "1" "1" "1" "1" ...
+ $ province_code       : chr [1:5099] "01" "01" "01" "01" ...
+ $ district_code       : chr [1:5099] "9" "9" "9" "9" ...
+ $ municipality_code   : chr [1:5099] "999" "999" "999" "999" ...
+ $ candidate_order     : chr [1:5099] "001" "002" "003" "004" ...
+ $ candidate_type      : chr [1:5099] "T" "T" "T" "T" ...
+ $ candidate_full_name : chr [1:5099] "Leire Orbañanos Martínez" "Iker Ruiz Basoco" "Aitor Menayo Hurtado" "Carolina Cruz Montesinos" ...
+ $ candidate_sex       : chr [1:5099] "female" "male" "male" "female" ...</code></pre>
+</div>
+</div>
+</section>
+<section id="get_candidacy_ballot_data" class="level4">
+<h4 class="anchored" data-anchor-id="get_candidacy_ballot_data"><code>get_candidacy_ballot_data</code></h4>
+<p>Retrieves data on the ballots cast for each candidacy.</p>
+<blockquote class="blockquote">
+<p><code>include_candidacy_names</code>: Logical. If TRUE, the function will include the names of the candidacies by fetching additional data. Default is TRUE.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>ballots_data <span class="ot">&lt;-</span> <span class="fu">get_candidacy_ballot_data</span>(<span class="st">"congress"</span>, </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                          <span class="dv">2023</span>, </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                          <span class="dv">07</span>, </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">include_candidacy_names =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>tibble [647,309 × 18] (S3: tbl_df/tbl/data.frame)
+ $ cod_elec            : chr [1:647309] "02" "02" "02" "02" ...
+ $ type_elec           : chr [1:647309] "congress" "congress" "congress" "congress" ...
+ $ date_elec           : Date[1:647309], format: "2023-07-23" "2023-07-23" ...
+ $ id_MIR_mun          : 'glue' chr [1:647309] "01-04-001" "01-04-001" "01-04-001" "01-04-001" ...
+ $ cod_MIR_ccaa        : chr [1:647309] "01" "01" "01" "01" ...
+ $ cod_INE_prov        : chr [1:647309] "04" "04" "04" "04" ...
+ $ cod_INE_mun         : chr [1:647309] "001" "001" "001" "001" ...
+ $ cod_mun_district    : chr [1:647309] "01" "01" "01" "01" ...
+ $ cod_sec             : chr [1:647309] "001" "001" "001" "001" ...
+ $ cod_poll_station    : chr [1:647309] "A" "A" "A" "A" ...
+ $ turn                : num [1:647309] 1 1 1 1 1 1 1 1 1 1 ...
+ $ id_candidacies      : chr [1:647309] "000001" "000002" "000003" "000004" ...
+ $ ballots             : num [1:647309] 1 122 0 1 124 56 0 0 0 24 ...
+ $ abbrev_candidacies  : chr [1:647309] "FO" "PSOE" "PUM+J" "ALM" ...
+ $ name_candidacies    : chr [1:647309] "FRENTE OBRERO" "PARTIDO SOCIALISTA OBRERO ESPAÑOL" "POR UN MUNDO MÁS JUSTO" "ALMERIENSES - REGIONALISTAS PRO ALMERÍA" ...
+ $ cod_candidacies_prov: chr [1:647309] "000001" "000002" "000003" "000004" ...
+ $ cod_candidacies_ccaa: chr [1:647309] "000001" "000002" "000003" "000004" ...
+ $ cod_candidacies_nat : chr [1:647309] "000001" "000002" "000003" "000004" ...</code></pre>
+</div>
+</div>
+</section>
+<section id="get_cera_data" class="level4">
+<h4 class="anchored" data-anchor-id="get_cera_data"><code>get_CERA_data</code></h4>
+<p>Aggregates Census of Absent Residents (CERA) data, which is crucial for analyzing voter turnout at various administrative levels. It summarizes key metrics such as census counts and voter turnout percentages.</p>
+<blockquote class="blockquote">
+<p><code>election_data</code>: A data frame containing the election data to be processed.</p>
+<p><code>id_col</code>: The name of the column containing the poll station ID. Defaults to <code>id_INE_poll_station</code></p>
+<p><code>level</code>: The hierarchical level for data aggregation. Can be one of “all”, “ccaa”, “prov”, “mun”, “mun_district”, “sec”, or “poll_station”. Defaults to “all”.</p>
+<p><code>prec_round</code>: The precision for rounding percentages. Defaults to 3.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>cera_data_prov <span class="ot">&lt;-</span> <span class="fu">get_CERA_data</span>(poll_station_data, </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">id_col =</span> <span class="st">"id_INE_poll_station"</span>, </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">level =</span> <span class="st">"prov"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>tibble [52 × 8] (S3: tbl_df/tbl/data.frame)
+ $ id_elec           : 'glue' chr [1:52] "02-2023-07-23" "02-2023-07-23" "02-2023-07-23" "02-2023-07-23" ...
+ $ cod_INE_ccaa      : 'glue' chr [1:52] "01" "01" "01" "01" ...
+ $ cod_INE_prov      : 'glue' chr [1:52] "04" "11" "14" "18" ...
+ $ type_elec         : chr [1:52] "congress" "congress" "congress" "congress" ...
+ $ date_elec         : Date[1:52], format: "2023-07-23" "2023-07-23" ...
+ $ census_cera       : num [1:52] 516114 1017958 645288 765478 402504 ...
+ $ total_ballots_cera: num [1:52] 321424 641933 453432 504830 260172 ...
+ $ turnout_cera      : num [1:52] 62.3 63.1 70.3 66 64.6 ...</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="get-survey-data" class="level3">
+<h3 class="anchored" data-anchor-id="get-survey-data">Get survey data</h3>
+<section id="get_survey_data" class="level4">
+<h4 class="anchored" data-anchor-id="get_survey_data"><code>get_survey_data</code></h4>
+<p>Retrieves and processes survey data for a specified range of years and months. This function also applies user-defined filters (e.g., days to election, polling firm, sample size) and handles various conditions like excluding exit polls and selecting specific parties while ensuring the data is in a consistent format.</p>
+<blockquote class="blockquote">
+<p><code>year</code>: A single year or a vector of years for which survey data should be retrieved.</p>
+<p><code>min_days_to</code>: Minimum number of days to the election for filtering (default is NULL). If specified, only surveys conducted at least this many days before the election are included.</p>
+<p><code>max_days_to</code>: Maximum number of days to the election for filtering (default is NULL). If specified, only surveys conducted no more than this many days before the election are included.</p>
+<p><code>select_polling_firm</code>: String matching in polling_firm column (default is “all”). If specified, only surveys from polling firms matching this string are included.</p>
+<p><code>select_media</code>: String matching in media column (default is “all”). If specified, only surveys from media outlets matching this string are included.</p>
+<p><code>select_parties</code>: Character vector specifying which columns (parties) to keep (default is “all”). If specified, only columns corresponding to the specified parties are retained.</p>
+<p><code>min_field_days</code>: Minimum number of fieldwork days (default is NULL). If specified, only surveys with at least this many days of fieldwork are included.</p>
+<p><code>max_field_days</code>: Maximum number of fieldwork days (default is NULL). If specified, only surveys with no more than this many days of fieldwork are included.</p>
+<p><code>min_size</code>: Minimum sample size (default is NULL). If specified, only surveys with at least this sample size are included.</p>
+<p><code>include_media</code>: Whether to include media information (default is TRUE). If set to FALSE, media information will be excluded from the results.</p>
+<p><code>include_exit_polls</code>: Whether to include exit polls in the data (default is TRUE). If set to FALSE, exit polls will be excluded from the results.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>survey_data <span class="ot">&lt;-</span> <span class="fu">get_survey_data</span>(<span class="at">year =</span> <span class="dv">2023</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>tibble [1,340 × 11] (S3: tbl_df/tbl/data.frame)
+ $ polling_firm      : chr [1:1340] "Ipsos" "Ipsos" "Ipsos" "Ipsos" ...
+ $ media             : chr [1:1340] NA NA NA NA ...
+ $ sample_size       : num [1:1340] NA NA NA NA 1200 1200 1200 1200 NA NA ...
+ $ turnout           : num [1:1340] NA NA NA NA NA NA NA NA NA NA ...
+ $ fieldwork_start   : Date[1:1340], format: "2023-07-22" "2023-07-22" ...
+ $ fieldwork_end     : Date[1:1340], format: "2023-07-22" "2023-07-22" ...
+ $ date_elec         : Date[1:1340], format: "2023-07-23" "2023-07-23" ...
+ $ fieldwork_duration: num [1:1340] 0 0 0 0 2 2 2 2 2 2 ...
+ $ is_exit_poll      : logi [1:1340] FALSE FALSE FALSE FALSE FALSE FALSE ...
+ $ party             : chr [1:1340] "PSOE" "PP" "VOX" "SUMAR" ...
+ $ vote_share        : num [1:1340] 28.6 34.4 11.8 13.5 28.8 31.9 13.1 14.2 27.9 37.5 ...</code></pre>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="data-use-functions" class="level2">
+<h2 class="anchored" data-anchor-id="data-use-functions">Data use functions</h2>
+<p>These functions are designed to conduct some analysis on the data provided by the package. From vizualizations to seat asignations and house effect analysis.</p>
+<section id="election-data" class="level3">
+<h3 class="anchored" data-anchor-id="election-data">Election data</h3>
+<section id="aggregate_election_data" class="level4">
+<h4 class="anchored" data-anchor-id="aggregate_election_data"><code>aggregate_election_data</code></h4>
+<p>Summarizes election data by various geographic levels, such as Autonomous Communities (CCAA), Provinces, and Municipalities. It is useful for aggregating results by geographical levels, candidacies or both.</p>
+<ul>
+<li><strong>Inputs</strong>: A data frame with election data and parameters for aggregation.
+<ul>
+<li><strong>Outputs</strong>: A data frame with aggregated election data by the specified level.</li>
+</ul></li>
+</ul>
+<blockquote class="blockquote">
+<p><code>ballots_data</code>: A data frame containing the election data, including ballots and candidacy information.</p>
+<p><code>scope</code>: The geographic level for data aggregation. Can be one of “ccaa”, “prov”, or “mun”. Defaults to “ccaa”.</p>
+<p><code>group_by_candidacy</code>: A logical value indicating whether to group data by candidacy name name_candidacies. Defaults to TRUE.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>aggregated_data <span class="ot">&lt;-</span> <span class="fu">aggregate_election_data</span>(ballots_data, </span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">scope =</span> <span class="st">"prov"</span>,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">group_by_candidacy =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(aggregated_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>tibble [837 × 10] (S3: tbl_df/tbl/data.frame)
+ $ year              : num [1:837] 2023 2023 2023 2023 2023 ...
+ $ cod_elec          : chr [1:837] "02" "02" "02" "02" ...
+ $ type_elec         : chr [1:837] "congress" "congress" "congress" "congress" ...
+ $ date_elec         : Date[1:837], format: "2023-07-23" "2023-07-23" ...
+ $ id_candidacies    : chr [1:837] "000001" "000001" "000001" "000001" ...
+ $ abbrev_candidacies: chr [1:837] "FO" "FO" "FO" "FO" ...
+ $ name_candidacies  : chr [1:837] "FRENTE OBRERO" "FRENTE OBRERO" "FRENTE OBRERO" "FRENTE OBRERO" ...
+ $ cod_MIR_ccaa      : chr [1:837] "01" "01" "01" "01" ...
+ $ cod_INE_prov      : chr [1:837] "04" "11" "14" "18" ...
+ $ total_ballots     : num [1:837] 500 1225 701 658 410 ...</code></pre>
+</div>
+</div>
+</section>
+<section id="allocate_seats_dhondt" class="level4">
+<h4 class="anchored" data-anchor-id="allocate_seats_dhondt"><code>allocate_seats_dhondt</code></h4>
+<p>Applies the D’Hondt method to allocate seats in the Spanish Congress based on election results. It aggregates votes by province, applies the D’Hondt method <span class="citation" data-cites="europarl2019">(<a href="#ref-europarl2019" role="doc-biblioref">European Parliament, 2019</a>)</span>, and returns the final seat distribution. This function has <code>recod_parties</code> embeded into it in order to make the seal allocations result accurate.</p>
+<ul>
+<li><strong>Inputs</strong>: A data frame with vote counts and the desired level of aggregation.</li>
+<li><strong>Outputs</strong>: A data frame with the final seat distribution.</li>
+</ul>
+<blockquote class="blockquote">
+<p><code>last_election_ballots</code>: A data frame containing the votes for each polling station.</p>
+<p><code>level</code>: The aggregation level for the final seat distribution. Options are <code>"prov"</code> (default) for provincial level, <code>"ccaa"</code> for autonomous community level, and <code>"national"</code> for national level.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>final_seat_distribution <span class="ot">&lt;-</span> <span class="fu">allocate_seats_dhondt</span>(<span class="at">last_election_ballots =</span> ballots_data, </span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                                                 <span class="at">level =</span> <span class="st">"ccaa"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="plot_election_results" class="level4">
+<h4 class="anchored" data-anchor-id="plot_election_results"><code>plot_election_results</code></h4>
+<p>Generates a map of Spain visualizing election results by either province or Autonomous Community. The map colors each geographical region according to the party with the most votes in that area.</p>
+<ul>
+<li><strong>Inputs</strong>: A data frame with election results and the desired level of geographic visualization.</li>
+<li><strong>Outputs</strong>: A <code>ggplot2</code> object displaying the election results on a map of Spain.</li>
+</ul>
+<blockquote class="blockquote">
+<p><code>election_data</code>: A data frame containing the election results. It should include the following columns: cod_INE_prov,prov, cod_MIR_ccaa, abbrev_candidacies, name_candidacies, ccaa, ballots.</p>
+<p><code>level</code>: A character string indicating the geographic level to plot. Options are “prov” (default) for province-level results, and “ccaa” for autonomous community-level results.</p>
+<p><code>colors_url</code> A character string specifying the URL from which to download the color codes for the political parties. Default is “https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda”.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_election_results</span>(<span class="at">election_data =</span> ballots_data, <span class="at">level =</span> <span class="st">"prov"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'ggplot2' was built under R version 4.3.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'mapSpain' was built under R version 4.3.3</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="04-Functionalities_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="plot_parliament_distribution" class="level4">
+<h4 class="anchored" data-anchor-id="plot_parliament_distribution"><code>plot_parliament_distribution</code></h4>
+<p>Generates a semicircle plot of parliamentary seat distribution using the `ggparliament` package. It visualizes the number of seats allocated to each party.</p>
+<ul>
+<li><strong>Inputs</strong>: A data frame with seat distribution data.</li>
+<li><strong>Outputs</strong>: A <code>ggplot2</code> object representing the seat distribution in a semicircle plot.</li>
+</ul>
+<blockquote class="blockquote">
+<p><code>election_data</code>: A data frame processed by the <code>allocate_seats_dhondt()</code> function</p>
+<p><code>colors_url</code>: A string URL pointing to the location of the RDA file containing party colors. Default is set to “https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda”.</p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_parliament_distribution</span>(<span class="at">election_data =</span> final_seat_distribution)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="04-Functionalities_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+
+</section>
+</section>
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-line-spacing="2" role="list">
+<div id="ref-pollspain2024" class="csl-entry" role="listitem">
+DeSmedt, M. (2024). <em>Pollspain-data</em>. <a href="https://github.com/mikadsr/Pollspain-data" class="uri">https://github.com/mikadsr/Pollspain-data</a>.
+</div>
+<div id="ref-europarl2019" class="csl-entry" role="listitem">
+European Parliament. (2019). <em>Understanding the d’hondt method</em> (Briefing No. 637966). Brussels: European Parliament. Retrieved from European Parliament website: <a href="https://www.europarl.europa.eu/RegData/etudes/BRIE/2019/637966/EPRS_BRI(2019)637966_EN.pdf">https://www.europarl.europa.eu/RegData/etudes/BRIE/2019/637966/EPRS_BRI(2019)637966_EN.pdf</a>
+</div>
+</div></section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

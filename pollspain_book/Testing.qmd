@@ -1,0 +1,9 @@
+---
+title: "Testing and Validation"
+author: "Mikaela De Smedt"
+format: 
+  html:
+    wordcount: true
+bibliography: references.bib
+csl: apa-6th-edition.csl
+---

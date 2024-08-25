@@ -1,0 +1,76 @@
+---
+title: "03-Architecture: Pollspain-data repository"
+author: "Mikaela De Smedt"
+format: 
+  html:
+    wordcount: true
+bibliography: references.bib
+csl: apa-6th-edition.csl
+---
+The backbone of this package lies in [Pollspain-data](https://github.com/mikadsr/Pollspain-data) [@pollspain2024] -- the repository where all files are originally downloaded and processed to be made available through `pollspain` functions. In this repository we can find functions of their own, and although not intended for hand in hand usage with the package, they serve to import and wrangle raw data as well as auxiliary data needed for the package's functionality.
+
+## Raw Data
+### Election Data
+
+Official election data is always sourced from the Spanish Ministry of the Interior through [Infoelectoral](https://infoelectoral.interior.gob.es/es/elecciones-celebradas/area-de-descargas/) [@interior2024]. However, as mentioned in earlier sections of this presentation, downloading data from each election provides us with 12 files to be processed as well as the specifications to import them. For the task of homogenizing data functions with the required parameters were defined as well as the desired transformations for the final file. It is important to note that processed files are saved in `.rda` format in order to minimize their size and therefore time and computing power required for them to be accessed.
+
+A structure of regular expressions was established to name the files based on the naming of original MIR files in order to standardize data processing. The following table contains the general naming structure of the MIR files, processing function from [Pollspain-data](https://github.com/mikadsr/Pollspain-data) [@pollspain2024] and output file.
+
+| Raw file                 | Processing function                  | Output file                                       |
+|------------------|-----------------------|-------------------------------|
+| 03{cod_elec}{YY}{MM}.DAT | `import_raw_candidacies_file()`      | raw_candidacies\_{type_elec}\_{YY}\_{MM}.rda      |
+| 10{cod_elec}{YY}{MM}.DAT | `import_raw_candidacies_poll_file()` | raw_candidacies_poll\_{type_elec}\_{YY}\_{MM}.rda |
+| 04{cod_elec}{YY}{MM}.DAT | `import_raw_candidates_file()`       | raw_candidates\_{type_elec}\_{YY}\_{MM}.rda       |
+| 05{cod_elec}{YY}{MM}.DAT | `import_raw_mun_MIR_files()`         | raw_mun_data\_{type_elec}\_{YY}\_{MM}.rda         |
+| 09{cod_elec}{YY}{MM}.DAT | `import_poll_stations_MIR_files()`   | raw_poll_stations\_{type_elec}\_{YY}\_{MM}.rda    |
+
+: Overview of raw files, processing functions an outputs
+
+It is thanks to this regular naming structure that the `pollspain` functions are able to search for each file depending on the data that is requested by election type (senate or congress) and date (year and month) as the functions source the Output files from the repository to further process them before loading them onto the user's R session.
+
+### Survey Data
+
+The process of sourcing survey data is longer than that or sourcing official electoral data files. For this we turned to an open source website to gather this data – Wikipedia. Although the ability of Wikipedia to provide error free information has often been questioned, here it is considered the most effective way of collecting publicly available information which had its original publication in many different sources as is the case with published opinion polling. Rather than rendering the collectoin opinion polls a manual task or worse, untraceable, the collaborative nature of Wikipedia provides a solution for its data collection.
+
+With respect to the actual collection of this data, the method used was web scrapping, something which is only possible given the structured nature of "Opinion polling" articles for Spanish general elections available which all include a Voting Intention estimates table.
+
+The initial step for this involves creating a list of URLs to historical opinion polling pages on Wikipedia. The script constructs URLs for each survey page based on the year and, in some cases, the month of the survey by taking a base URL. For years with multiple surveys, URLs are generated for both specific monthly and general yearly pages. This process results in a comprehensive list of links pointing to the relevant Wikipedia pages containing polling data.
+
+Then the script proceeds to fetch the HTML content from these pages, going through each URL and download the HTML of the corresponding page. The HTML content is stored in a list where entries are associated with a unique identifier based on the year and month of the survey and stored in the repository as `survey_html_list.rds` for reference. From this HTMLs the scrapper sources the table of interest before proceeding to clean the data.
+
+The final result is one file named `POLL_{cod_elec}{YY}{MM}.rda` per election which includes variables such as the polling firm, media outlet where the poll was published, sample size, fieldwork dates, date of the election they poll for, party and estimated voting intention. This is presented in a tidy data format.
+
+## Auxiliary Data
+
+### Dates of Spanish Elections `dates_elections_spain`
+
+This is a dataframe scrapped from the Elections Spain annex in wikipedia [@wikipedia_espania_elections]. This data frame is crucial for the functioning of the package. It serves to corroborate which election dates truly exist, an essential check in the processing of raw data and sourcing of processed data through package functions. It is hosted in the pollspain-data repository. 
+
+```{r, echo=FALSE}
+load("~/R stuff/Pollspain-data/get auxiliary data/dates_elections_spain.rda")
+str(dates_elections_spain)
+rm(dates_elections_spain)
+```
+
+### Municipality Codes `cod_INE_mun ` 
+This datframe is constructed from two files sourced from the National Insitute of Statistics (INE). The first file contains a dictionary of all municipal codes in spain [@INE_MUN_Dictionary] and the second a relation of province and autonomus community codes in spain [@INE_prov_Codes]. They were joined to create a df with comprehensive codes for all 8132 municipalities in the country. 
+```{r, echo=FALSE}
+load("~/R stuff/Pollspain-data/get auxiliary data/cod_INE_mun.rda")
+str(cod_INE_mun)
+rm(cod_INE_mun)
+```
+### Politicla Party colors `party_colors_hex`
+This dataframe is used for data vizualization functions. It was made specially for this package by sourcing the correponding color codes for each of the major parties in Spain form various sources. 
+```{r, echo=FALSE}
+load("~/R stuff/Pollspain-data/get auxiliary data/party_colors_hex.rda")
+str(party_colors_hex)
+rm(party_colors_hex)
+```
+
+### Distribution of seats per constituency`seat_distribution_congress`
+Dataset holding the number of seats distributed by each constituency from 1982 until 2023. As there is no government site that offers a traceable dataset of the number of seats per ciscunscription this was sourced from Wikipedia Article "Circunscripciones electorales del Congreso de los Diputados" [@wikipedia2024circunscripciones] and cross validated with election results for each year available. 
+```{r, echo=FALSE}
+load("~/R stuff/Pollspain-data/get auxiliary data/seat_distribution_congress.rda")
+str(seat_distribution_congress)
+rm(seat_distribution_congress)
+```

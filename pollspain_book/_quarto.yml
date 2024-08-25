@@ -1,0 +1,35 @@
+project:
+  type: book
+
+book:
+  title: "Pollspain"
+  author: "Mikaela De Smedt"
+  date: "8/25/2024"
+  chapters:
+    - index.qmd
+    - Introduction.qmd
+    - Literature_Review.qmd
+    - Architecture.qmd
+    - Functionalities.qmd
+    - Testing.qmd
+    - references.qmd
+  cover-image: pollspain_icon.png
+
+bibliography: references.bib
+csl: apa-6th-edition.csl
+
+format:
+  html:
+    theme: journal
+  pdf:
+    documentclass: scrreprt
+    include-in-header: 
+      text: |
+        \usepackage{makeidx}
+        \makeindex
+    include-after-body: 
+      text: |
+        \printindex
+    tbl-colwidths: FALSE
+
+editor: visual

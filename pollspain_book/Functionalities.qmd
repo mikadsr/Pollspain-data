@@ -1,0 +1,340 @@
+---
+title: "Functionalities"
+author: "Mikaela De Smedt"
+format: 
+  html:
+    wordcount: true
+bibliography: references.bib
+csl: apa-6th-edition.csl
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, echo=FALSE, results='hide'}
+library(pollspain)
+library(tidyverse)
+library(dplyr)
+```
+
+In alignment with the package's objective, the functions that compose it revolve around 3 main functionalities: utility functions that support the core operations of the package, functions that retrieve and process election data, and functions that allow us to use this data.
+
+## Utility functions
+
+These are functions that ensure the correct working of the package. They may also be used by users to further analysis of their own. They work by handling data cleaning, standardization and format conversion.
+
+### Re coding parties `recod_parties`
+
+This function re codes the names of candidacies and their abbreviations to make sure any aggregated analysis remains robust regardless of the naming variations candidacies. These variations are due to language variations across the Spanish territory and character variations from one candidacy inscription to another. The dictionary used for this codification was manually sourced by tracing the names and abbreviations of parties having achieved seats in the Spanish congress since 1982.
+
+-   **Inputs**: A data frame with party names and abbreviations.
+-   **Outputs**: A cleaned data frame with standardized party names and abbreviations.
+
+```{r, eval=FALSE}
+recod_parties(party_data, col_name_abbrev = "abbrev", col_name_candidacies = "full_name")
+```
+
+> `parties_data`: A data frame containing political party data with columns for party abbreviations and full names.
+>
+> `col_name_abbrev`: A character string specifying the column name for party abbreviations in the input data frame. Defaults to "abbrev_candidacies".
+>
+> `col_name_candidacies`: A character string specifying the column name for party full names in the input data frame. Defaults to "name_candidacies".
+
+### Extracting regional codes `extract_code`
+
+This function extracts specific regional codes from standard poll station identifiers from the ministry of the interior data. This retrieves codes corresponding to different levels of geographical aggregations from poll station IDs.
+
+-   **Inputs**: A poll station identifier and the desired level of geographic aggregation.
+-   **Outputs**: A vector containing the extracted codes.
+
+```{r, eval=FALSE}
+extract_code(id_INE_poll_station, level = "mun", full_cod = FALSE)
+```
+
+> `id_INE_poll_station`: poll station code. It should be a string vector with tokens between 18 and 19 characters with 5 '-' according to the INE/MIR format").
+>
+> `level`: aggregation level, for which we want to extract codes. It should be taken from the following values: 'ccaa', 'prov', 'mun', 'mun-district', 'sec' or 'poll-station'
+>
+> `full_cod`: flag to indicate if codes should be provided in a full format (including codes of more aggregated levels) or not. Defaults to `FALSE`.
+
+### Extracting election codes `type_to_code_election`
+
+This function maps election types to their corresponding codes used by the Spanish Ministry of the Interior. It ensures that the correct data sets are accessed for the election type defined by the user. Although the package only supports congress and senate elections at the moment, this function accepts all election types stated by the official source.
+
+-   **Inputs**: A string indicating the type of election.
+-   **Outputs**: A string with the corresponding election code.
+
+```{r, eval=FALSE}
+type_to_code_election(type_elec = "congress")
+```
+
+> `type_elec` type elections for which data is available. It should be one of the following values: "referendum", "congress", "senate", "local", "cabildo" (Canarian council) or "EU".
+
+## Data retrieval functions
+
+These functions are designed to fetch `.rda` files from the [Pollspain-data](https://github.com/mikadsr/Pollspain-data) [@pollspain2024] repository. They work by matching the type of election, year and month provided to the corresponding directory within the repository.
+
+### Get election data
+
+These are 6 functions that allow us to access different data sets from a corresponding election. The functions support retrieving data for both single and multiple elections. Unless specified otherwise the following arguments are always present in these functions:
+
+> `type_elec`: A vector or single value representing the types of elections.
+>
+> `year`: A vector or single value representing the years of the elections to be considered.
+>
+> `month`: A vector or single value representing the months of the elections to be considered.
+
+#### `get_mun_census_data`
+
+Retrieves municipal-level census data for specific elections in Spain
+
+```{r,message=FALSE, warning=FALSE, results='hide'}
+mun_census_data <- get_mun_census_data("congress", 2023, 7)
+```
+
+```{r, echo=FALSE}
+str(mun_census_data)
+rm(mun_census_data)
+```
+
+#### `get_poll_station_data`
+
+Retrieves detailed data for individual polling stations for specified elections.
+
+> `prec_round`: Number of decimal places to round percentage values to (default is 3).
+
+```{r,message=FALSE, warning=FALSE, results='hide'}
+poll_station_data <- get_poll_station_data("congress", 2023, 7)
+```
+
+```{r, echo=FALSE}
+str(poll_station_data)
+```
+
+#### `get_candidates_data`
+
+Retrieves detailed information about candidates who participated in specified elections, including their names, gender, and ballot order.
+
+```{r,message=FALSE, warning=FALSE, results='hide'}
+candidates_data <- get_candidates_data("congress", 2023, 7)
+```
+
+```{r, echo=FALSE}
+str(candidates_data)
+rm(candidates_data)
+```
+
+#### `get_candidacies_data`
+
+Retrieves candidacies data, allowing the option to include candidate details or not.
+
+> `include_candidates` Logical flag indicating whether to include detailed candidates data. Default is FALSE.
+
+```{r,message=FALSE, warning=FALSE, results='hide'}
+candidates_data_with_details <- get_candidacies_data("congress",
+                                                     2023, 
+                                                     7,
+                                                     include_candidates = TRUE)
+```
+
+```{r, echo=FALSE}
+str(candidates_data_with_details)
+rm(candidates_data_with_details)
+```
+
+#### `get_candidacy_ballot_data`
+
+Retrieves data on the ballots cast for each candidacy.
+
+> `include_candidacy_names`: Logical. If TRUE, the function will include the names of the candidacies by fetching additional data. Default is TRUE.
+
+```{r,message=FALSE, warning=FALSE, results='hide'}
+ballots_data <- get_candidacy_ballot_data("congress", 
+                                          2023, 
+                                          07, 
+                                          include_candidacy_names = TRUE)
+
+```
+
+```{r, echo=FALSE}
+str(ballots_data)
+```
+
+#### `get_CERA_data`
+
+Aggregates Census of Absent Residents (CERA) data, which is crucial for analyzing voter turnout at various administrative levels. It summarizes key metrics such as census counts and voter turnout percentages.
+
+> `election_data`: A data frame containing the election data to be processed.
+>
+> `id_col`: The name of the column containing the poll station ID. Defaults to `id_INE_poll_station`
+>
+> `level`: The hierarchical level for data aggregation. Can be one of "all", "ccaa", "prov", "mun", "mun_district", "sec", or "poll_station". Defaults to "all".
+>
+> `prec_round`: The precision for rounding percentages. Defaults to 3.
+
+```{r,message=FALSE, warning=FALSE, results='hide'}
+cera_data_prov <- get_CERA_data(poll_station_data, 
+                                 id_col = "id_INE_poll_station", 
+                                 level = "prov")
+```
+
+```{r, echo=FALSE}
+str(cera_data_prov)
+rm(cera_data_prov)
+```
+
+### Get survey data
+
+#### `get_survey_data`
+
+Retrieves and processes survey data for a specified range of years and months. This function also applies user-defined filters (e.g., days to election, polling firm, sample size) and handles various conditions like excluding exit polls and selecting specific parties while ensuring the data is in a consistent format.
+
+> `year`: A single year or a vector of years for which survey data should be retrieved.
+>
+> `min_days_to`: Minimum number of days to the election for filtering (default is NULL). If specified, only surveys conducted at least this many days before the election are included.
+>
+> `max_days_to`: Maximum number of days to the election for filtering (default is NULL). If specified, only surveys conducted no more than this many days before the election are included.
+>
+> `select_polling_firm`: String matching in polling_firm column (default is "all"). If specified, only surveys from polling firms matching this string are included.
+>
+> `select_media`: String matching in media column (default is "all"). If specified, only surveys from media outlets matching this string are included.
+>
+> `select_parties`: Character vector specifying which columns (parties) to keep (default is "all"). If specified, only columns corresponding to the specified parties are retained.
+>
+> `min_field_days`: Minimum number of fieldwork days (default is NULL). If specified, only surveys with at least this many days of fieldwork are included.
+>
+> `max_field_days`: Maximum number of fieldwork days (default is NULL). If specified, only surveys with no more than this many days of fieldwork are included.
+>
+> `min_size`: Minimum sample size (default is NULL). If specified, only surveys with at least this sample size are included.
+>
+> `include_media`: Whether to include media information (default is TRUE). If set to FALSE, media information will be excluded from the results.
+>
+> `include_exit_polls`: Whether to include exit polls in the data (default is TRUE). If set to FALSE, exit polls will be excluded from the results.
+
+```{r,message=FALSE, warning=FALSE, results='hide'}
+survey_data <- get_survey_data(year = 2023)
+
+```
+
+```{r, echo=FALSE}
+str(survey_data)
+```
+
+## Data use functions
+
+These functions are designed to conduct some analysis on the data provided by the package. From vizualizations to seat asignations and house effect analysis.
+
+### Election data
+
+#### `aggregate_election_data`
+
+Summarizes election data by various geographic levels, such as Autonomous Communities (CCAA), Provinces, and Municipalities. It is useful for aggregating results by geographical levels, candidacies or both.
+
+-   **Inputs**: A data frame with election data and parameters for aggregation.
+    -   **Outputs**: A data frame with aggregated election data by the specified level.
+
+> `ballots_data`: A data frame containing the election data, including ballots and candidacy information.
+>
+> `scope`: The geographic level for data aggregation. Can be one of "ccaa", "prov", or "mun". Defaults to "ccaa".
+>
+> `group_by_candidacy`: A logical value indicating whether to group data by candidacy name name_candidacies. Defaults to TRUE.
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+aggregated_data <- aggregate_election_data(ballots_data, 
+                                           scope = "prov",
+                                           group_by_candidacy = TRUE)
+```
+
+```{r}
+str(aggregated_data)
+```
+
+#### `allocate_seats_dhondt`
+
+Applies the D'Hondt method to allocate seats in the Spanish Congress based on election results. It aggregates votes by province, applies the D'Hondt method [@europarl2019], and returns the final seat distribution. This function has `recod_parties` embeded into it in order to make the seal allocations result accurate.
+
+-   **Inputs**: A data frame with vote counts and the desired level of aggregation.
+-   **Outputs**: A data frame with the final seat distribution.
+
+> `last_election_ballots`: A data frame containing the votes for each polling station.
+>
+> `level`: The aggregation level for the final seat distribution. Options are `"prov"` (default) for provincial level, `"ccaa"` for autonomous community level, and `"national"` for national level.
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+final_seat_distribution <- allocate_seats_dhondt(last_election_ballots = ballots_data, 
+                                                 level = "ccaa")
+```
+
+```{r}
+str(final_seat_distribution)
+```
+
+#### `plot_election_results`
+
+Generates a map of Spain visualizing election results by either province or Autonomous Community. The map colors each geographical region according to the party with the most votes in that area.
+
+-   **Inputs**: A data frame with election results and the desired level of geographic visualization.
+-   **Outputs**: A `ggplot2` object displaying the election results on a map of Spain.
+
+> `election_data`: A data frame containing the election results. It should include the following columns: cod_INE_prov,prov, cod_MIR_ccaa, abbrev_candidacies, name_candidacies, ccaa, ballots.
+>
+> `level`: A character string indicating the geographic level to plot. Options are "prov" (default) for province-level results, and "ccaa" for autonomous community-level results.
+>
+> `colors_url` A character string specifying the URL from which to download the color codes for the political parties. Default is "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda".
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+plot_election_results(election_data = ballots_data, level = "prov")
+```
+
+#### `plot_parliament_distribution`
+
+Generates a semicircle plot of parliamentary seat distribution using the \`ggparliament\` package. It visualizes the number of seats allocated to each party.
+
+-   **Inputs**: A data frame with seat distribution data.
+-   **Outputs**: A `ggplot2` object representing the seat distribution in a semicircle plot.
+
+> `election_data`: A data frame processed by the `allocate_seats_dhondt()` function
+>
+> `colors_url`: A string URL pointing to the location of the RDA file containing party colors. Default is set to "https://github.com/mikadsr/Pollspain-data/raw/main/get%20auxiliary%20data/party_colors_hex.rda".
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+plot_parliament_distribution(election_data = final_seat_distribution)
+```
+
+### Survey data
+
+Calculates the average polling error for each polling firm and party,based on the provided survey, election, and polling data. It allows for optional filtering by specific polling firms and/or parties.
+
+-   **Inputs**: Two data frames: one for survey data and one for election results. Optional filters for polling firms and parties.
+
+-   **Output:** a data frame with the average polling error for each polling firm and political party. It includes the date of the election, polling firm, political party, and the average polling error. With the option to filter based on the specified polling firms and/or parties if provided.
+
+> `survey_data`: A data frame containing survey data with the following columns:
+>
+> -   date_elec: The date of the election.
+> -   polling_firm: The name of the polling firm.
+> -   party: The political party for which the vote share is estimated.
+> -   vote_share: The estimated vote share from the survey.
+>
+> `election_data`: A data frame obtained from `get_candidacy_ballot_data` containing election data with the following columns:
+>
+> -   date_elec: The date of the election.
+> -   abbrev_candidacies: The abbreviation of the candidacies (parties).
+> -   total_ballots: The total number of ballots cast for each party.
+>
+> `poll_data`: A data frame obtained from `get_poll_station_data()`containing polling data with the following columns:
+>
+> -   date_elec: The date of the election.
+> -   total_ballots: The total number of ballots cast in each polling station.
+>
+> `filter_polling_firm`: Optional. A vector of polling firms to filter by. If NULL (default), no filtering by polling firm is applied.
+>
+> `filter_party`: Optional. A vector of parties to filter by. If NULL (default), no filtering by party is applied.
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+polling_errors <- calculate_polling_errors(
+  survey_data =  survey_data,
+  election_data = ballots_data,
+  poll_data = poll_station_data)
+```
+
+```{r}
+str(polling_errors)
+```

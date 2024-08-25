@@ -1,10 +1,12 @@
-library(readxl)
-library(dplyr)
-library(stringr)
-#Load file with INE codes for provice codes with CCAA codes
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(readxl,dplyr,stringr,glue)
+###########################################################
+
+#LOAD FILES ----
+## INE codes for provice codes with CCAA codes ----
 cod_INE_ccaa_prov <- read_excel("get auxiliary data/cod_INE_ccaa_prov.xlsx") 
 
-#Load file with INE codes for municipalities
+## INE codes for municipalities ----
 diccionario24 <- read_excel("get auxiliary data/diccionario24.xlsx") |> 
   rename(cod_INE_ccaa = "CODAUTO",
          cod_INE_prov = "CPRO",
@@ -12,7 +14,7 @@ diccionario24 <- read_excel("get auxiliary data/diccionario24.xlsx") |>
          mun="NOMBRE") |> 
   select(-DC) 
 
-# Perform the join between two files
+# Perform the join between two files ----
 cod_INE_mun <- left_join(cod_INE_ccaa_prov, diccionario24, 
                          by = c("cod_INE_ccaa", "cod_INE_prov")) |> 
   mutate(
@@ -28,9 +30,9 @@ cod_INE_mun <- left_join(cod_INE_ccaa_prov, diccionario24,
            glue("{cod_MIR_ccaa}-{cod_INE_prov}-{cod_INE_mun}")) |> 
   relocate(cod_INE_mun, mun, id_INE_mun, id_MIR_mun,cod_INE_prov, prov, cod_INE_ccaa, cod_MIR_ccaa, ccaa)
 
-#Save .rda
+# ---- save_rda ----
 save(cod_INE_mun, file ="./get auxiliary data/cod_INE_mun.rda")
-
+# ---- rm ----
 rm(diccionario24, cod_INE_ccaa_prov)
 
 

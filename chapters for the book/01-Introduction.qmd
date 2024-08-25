@@ -1,0 +1,35 @@
+---
+title: "01-Introduction"
+author: "Mikaela De Smedt"
+format: 
+  html:
+    wordcount: true
+bibliography: references.bib
+csl: apa-6th-edition.csl
+---
+
+![](pollspain_icon.png){fig-align="left"}
+
+## Introduction
+
+"The concept of open data is based on the idea that data should be freely available for anyone to access, use and share"[@carolan2017open].Following this principle it is only natural that something as consequential to the general public as electoral data be open and accessible for everyone. We have evidence that access and exposure to said data is related to an increase in political efficiency, knowledge and participation [@doi:10.1207/s15506878jobem5002_1] – desireable aspects in democracy. Among all the stakeholders that are interested in electoral data – from political analysts, researchers, policymakers, journalists, to civil society organizations and general public – the levels of expertise vary tremendously, which can present challenges in accessing and using electoral data.
+
+Although electoral data is generally open to the public, it is seldom presented in a user-friendly formats that allow the public to effectively access and use this data, making it difficult for users without advanced data literacy to engage with the data meaningfully. In the case of spain, electoral data is often found in official government websites such as the [Infoelectoral](https://infoelectoral.interior.gob.es/es/elecciones-celebradas/area-de-descargas/) portal of the ministry of the interior [@interior2024] but the challenge of reading the data onto our analysis environment and wrangling it to make it usable remains. Furthermore we are still missing key elements such as geo-location codes, a comprehensive list of party names or the seat allocation for each circumscription to be able to use this data for any analysis.
+
+The `pollspain` R package was developed to address these challenges by providing a centralized, streamlined, and accessible resource for Spanish electoral offical and opinion polling data. The package acts as a one-stop shop for electoral data.
+
+The primary objective of the `pollspain` package is to consolidate data on Spanish election results and opinion polls from a variety of sources, preprocessing it into a format that is immediately accessible through the R environment. The package is designed to be computationally efficient, minimizing the amount of data that needs to be processed by the user to provide the data of the elections on the time period requested. In addition to data retrieval and processing, `pollspain` offers tools for electoral analysis and visualization.
+
+The current scope of the `pollspain` package includes functions that enable users to fetch and process official data on Spanish Congress and Senate elections from 1982 to 2023. This data includes detailed information on the electoral census, candidates, candidacies, and vote shares, all presented at the polling station level with option to group them at the municipality, province, autonomous community or national level.
+
+Although the user will still be required to have a basic knowledge of R the package is intended for use by a diverse audience with an interest in Spanish electoral processes, the functions of this package have already minimized the need for data wrangling before analysis. By simplifying access to this rich dataset, `pollspain` seeks to empower users to engage more deeply with electoral data, regardless of their technical background.
+
+## Package Overview
+
+`pollspain` offers a range of features for its users to work with Spanish electoral data. Primarily, the centralization of official electoral data from the Spanish Ministry of the Interior through [Infoelectoral](https://infoelectoral.interior.gob.es/es/elecciones-celebradas/area-de-descargas/) [@interior2024] through its download, processing and hosting in [Pollspain-data](https://github.com/mikadsr/Pollspain-data) [@pollspain2024]the data repository for the package. This makes it so comprehensive datasets on municipal census information, candidacies, candidates, polling stations, and CERA data from 1982 until 2023 are available through the package.
+
+In addition to this, the package also provides ready-made functions for summarizing and visualizing the information. These functions are designed to be intuitive and easy to use, enabling users to quickly generate insights from the data without requiring extensive programming knowledge.
+
+Lastly, a key feature of the package is the access to electoral survey data. This allows users to access a collection of public opinion polling results and perform analysis such as polling error and house effects on them.
+
+Overall, `pollspain` combines data sourcing, processing and analysis into a single package that empowers users to engage deeply with Spanish electoral data.
